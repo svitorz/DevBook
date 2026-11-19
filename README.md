@@ -23,7 +23,7 @@ API RESTful desenvolvida em **Go (Golang)** com foco em performance, boas práti
 - [Docker](https://www.docker.com/)
 - [JWT (JSON Web Token)](https://jwt.io/)
 - [Mux Router](https://github.com/gorilla/mux)
-- [GORM (opcional, caso use)](https://gorm.io/)
+- [GORM](https://gorm.io/) (acesso a dados; o schema é SQL puro em `api/sql/schema.sql`)
 
 ---
 
@@ -38,61 +38,73 @@ API RESTful desenvolvida em **Go (Golang)** com foco em performance, boas práti
 
 ```bash
 git clone https://github.com/svitorz/DevBook.git
-cd DevBook
+cd DevBook/api
 ```
 
-### Crie o arquivo `.env`
+### Configure o ambiente
 
-```env
-DB_USER=root
-DB_PASS=mydba
-DB_NAME=devbook
-DB_PORT=3307
-DB_HOST=127.0.0.1
-API_PORT=5000
+```bash
+cp .env.example .env   # valores de desenvolvimento; ajuste SECRET_KEY
 ```
+
+| Variável | Uso |
+|---|---|
+| `DB_USER`, `DB_PASS`, `DB_NAME` | credenciais e nome do banco (`DB_PASS` também é a senha root do MySQL do compose) |
+| `DB_HOST`, `DB_PORT` | usados só quando a API roda fora do docker; `DB_PORT` é a porta publicada no host (padrão 3310) |
+| `API_PORT` | porta da API (padrão 5000) |
+| `SECRET_KEY` | chave de assinatura do JWT (**obrigatória**: a API não sobe sem ela) |
+| `CORS_ORIGIN` | origem do front liberada no CORS (padrão `http://localhost:5173`) |
 
 ### Execute com Docker Compose
 
 ```bash
-docker-compose up --build
+docker compose up -d --build
 ```
 
-A API estará disponível em: [http://localhost:5000](http://localhost:5000)
+A API fica em [http://localhost:5000](http://localhost:5000). O schema (`sql/schema.sql`) é aplicado pelo MySQL na **primeira** subida, com o volume vazio.
+
+### Testes
+
+```bash
+./scripts/smoke.sh   # fumaça: exercita todos os endpoints contra a API rodando
+TEST_DB_DSN='root:devbook_dev@tcp(127.0.0.1:3310)/devbook_test?parseTime=True&loc=Local' go test ./...
+```
+
+Sem `TEST_DB_DSN`, os testes de integração são pulados.
 
 ---
 
-## 🧪 Endpoints principais
+## 🧪 Endpoints
 
-- `POST /login` → autenticação e geração de token JWT
+Tudo é JSON. Erros vêm como `{"erro": "..."}`. Status: 400 entrada inválida, 401 token ausente/inválido, 403 sem permissão, 404 não encontrado, 409 nick/e-mail duplicado.
 
-- `POST /usuarios` → cadastro de usuário
-
-- `GET /usuarios` → listagem de usuários
-
-- `GET /usuarios/{id}` → detalhes de usuário
-
-- `PUT /usuarios/{id}` → edição
-
-- `DELETE /usuarios/{id}` → exclusão
-
-- `POST /publicacoes` → criar publicação
-
-- `GET /publicacoes` → listar publicações
-
-- `POST /publicacoes/{id}/curtir` → curtir
-
-- `POST /publicacoes/{id}/descurtir` → remover curtida
-
-- `POST /usuarios/{id}/seguir` → seguir outro usuário
-
-- `POST /usuarios/{id}/parar-de-seguir` → deixar de seguir
+| Método | Rota | Auth | Sucesso |
+|---|---|---|---|
+| POST | `/usuarios` | — | 201 usuário (sem senha) |
+| POST | `/login` | — | 200 `{"token": "..."}` |
+| GET | `/usuarios?usuario=<nome ou nick>` | ✔ | 200 lista |
+| GET | `/usuarios/{id}` | ✔ | 200 usuário |
+| PUT | `/usuarios/{id}` | ✔ (dono) | 204 (`nome`, `nick`, `email`) |
+| DELETE | `/usuarios/{id}` | ✔ (dono) | 204 |
+| POST | `/usuarios/{id}/seguir` | ✔ | 204 |
+| POST | `/usuarios/{id}/parar-de-seguir` | ✔ | 204 |
+| GET | `/usuarios/{id}/seguidores` | ✔ | 200 lista |
+| GET | `/usuarios/{id}/seguindo` | ✔ | 200 lista |
+| POST | `/usuarios/{id}/atualizar-senha` | ✔ (dono) | 204 (`{"atual", "nova"}`; atual errada = 401) |
+| POST | `/publicacoes` | ✔ | 201 publicação (autor = usuário do token) |
+| GET | `/publicacoes` | ✔ | 200 feed (próprias + de quem segue) |
+| GET | `/publicacoes/{id}` | ✔ | 200 publicação |
+| GET | `/publicacoes/usuario/{id}` | ✔ | 200 lista de publicações do usuário |
+| PUT | `/publicacoes/{id}` | ✔ (autor) | 204 |
+| DELETE | `/publicacoes/{id}` | ✔ (autor) | 204 |
+| POST | `/publicacoes/{id}/curtir` | ✔ | 204 (idempotente) |
+| POST | `/publicacoes/{id}/descurtir` | ✔ | 204 |
 
 ---
 
 ## 🔐 Autenticação JWT
 
-Ao fazer login, você recebe um token JWT que deve ser enviado no header:
+Ao fazer login, você recebe um token JWT (válido por 6 horas) que deve ser enviado no header:
 
 ```http
 Authorization: Bearer seu_token_jwt

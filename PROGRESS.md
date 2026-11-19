@@ -3,7 +3,7 @@
 > Memória do projeto. Ler ANTES de qualquer coisa ao iniciar sessão ou após compactação.
 
 ## Fase atual
-**Fase 2 — correções da API (em andamento)**
+**Fase 2 — correções da API (concluída, aguardando "continuar")**
 Branch: `chore/api-hardening` (fases 0–1 mergeadas no `main` via PR #1, `dbb1e25`; branch avançada em fast-forward).
 
 ### Decisões da Fase 2 (confirmadas pelo usuário em 2026-11-19)
@@ -54,13 +54,14 @@ Cada item tem um teste que falhava antes da correção e passa depois (`go test 
 - [x] N2 login sem enumeração de e-mail (`31f558e`)
 - [x] N4 JOIN do /seguindo (`ad15b6d`)
 - [x] N5 curtir idempotente + 404 (`35fd40b`)
-- [ ] H9/H10 schema.sql no initdb; app sem DDL; DB_NAME respeitado
-- [ ] H11 resto (README) / H12 go mod tidy
-- [ ] H13 rota /usuarios/{id}
-- [ ] H14 status HTTP padronizados + login JSON + 409
-- [ ] H15 publicações do usuário como lista
-- [ ] H16 CORS
-- [ ] Fumaça final
+- [x] H9/H10 schema.sql no initdb; app sem DDL; DB_NAME respeitado (`f249204`). Prova feita num MySQL vazio (tmpfs) com `DB_NAME=devbook_alt`
+- [x] H11 resto: README com portas, variáveis, testes e endpoints corretos
+- [x] H12 `go.mod` tidy (já estava desde o baseline; o JWT v5 tirou o `dgrijalva`); agora há testes em 6 pacotes
+- [x] H13 rota `GET /usuarios/{id}` (`9c0f210`)
+- [x] H14 `responses` (`214dfd0`) + status por categoria (`76f9967`) + login JSON (`f8aec3f`)
+- [x] H15 publicações do usuário como lista (`dc81402`)
+- [x] H16 CORS (`26384cd`)
+- [x] **Fumaça final: 65 ok / 0 falha** (baseline era 43/23); 0 panic no log; `go test ./...` verde
 
 ## Hipóteses — status verificado (Fase 0)
 | # | Status | Evidência |
@@ -137,10 +138,30 @@ Não cobertos pela fumaça (provar com teste Go na fase 2): H1 (registro duplica
 - 2026-11-19 — **Infra (Fase 1)**: compose com `name: devbook`, porque o nome padrão `api` colide com containers `api-*` de outro projeto na máquina. Banco publicado em 3310, já que 3306 e 3307 estão ocupados no host. Dentro da rede a API usa `db:3306` fixo. A API escuta na mesma `API_PORT` dentro e fora. Healthcheck no MySQL, para a API só subir com o banco pronto (necessário agora que ela conecta no boot). Removi o volume `.:/app`, que esconderia o binário. A falta de `.env` virou aviso em vez de `log.Fatal`. Descartado: manter o `.env` dentro da imagem, porque vaza segredo e não é assim que o compose injeta variáveis.
 - 2026-11-19 — **Pool por injeção, não global**. Os handlers viraram métodos de `controllers.Controllers{db}`, e as rotas viraram funções `rotasX(c)`. Alternativa descartada: `var DB *gorm.DB` global no pacote `database`. Seria um diff menor (só troca o `Conectar()` por `database.DB`), mas cria estado global: os testes não conseguem trocar o banco sem mutar um global compartilhado, o que impede `t.Parallel()`, e a dependência fica escondida. Custo da escolha: assinatura nova em todos os handlers e um diff mecânico maior. Não configurei `SetMaxOpenConns` e afins: os defaults bastam para um projeto de estudo.
 - 2026-11-19 — **Efeitos colaterais da refatoração** (inevitáveis, porque o código removido era o próprio bug): (1) em `BuscarUsuarios`, o nil-deref quando `Conectar` falhava (parte do H4) deixou de existir; (2) o vazamento de pool no `CriarPublicacao` (parte do H2) deixou de existir. Nenhum dos dois era observável pela fumaça. O primeiro só acontecia com o banco fora do ar; a prova do segundo é a contagem de conexões acima. Agora uma falha de banco no boot dá `log.Fatal` com a mensagem, e não durante uma requisição.
+- 2026-11-19 — **Fase 2, decisões técnicas**: (1) "não encontrado" via `Take` + `gorm.ErrRecordNotFound`, traduzido em `responderErroDeBusca`; (2) 409/404 de escrita via `gorm.Config{TranslateError: true}` (`ErrDuplicatedKey`/`ErrForeignKeyViolated`), em vez de olhar o número do erro MySQL (seria acoplar ao driver); (3) curtir idempotente com `OnConflict{DoNothing}`, o mesmo padrão do Follow; (4) CORS escrito à mão (~20 linhas) em vez de `rs/cors`, sem lib nova; envolve o router inteiro porque o mux dá 405 ao OPTIONS; (5) N1 resolvido limpando `Senha` antes da resposta (DTO ficou em Ideias futuras); (6) H13 removeu a rota singular em vez de manter alias, porque ainda não há cliente.
+- 2026-11-19 — **Erro de processo (H6)**: o commit `14e6b16` saiu só com o teste, porque o `&&` checava o `grep` e não o `go test`. Não reescrevi o histórico (pede confirmação); a correção veio em `4266df2`. Desde então os commits só rodam se o `go test` sair com 0.
 - 2026-11-19 — Script de fumaça: o esperado de cada item é o contrato-alvo, e cada item isola um bug. Na primeira versão do script, o H2 contaminava os testes de ownership e eu tinha errado a direção do follow. Corrigi antes de registrar o baseline.
 
 ## Contrato da API (mudanças)
-_Nenhuma ainda._
+O contrato final está na tabela de endpoints do README. Mudanças em relação ao `main@fedaf99`:
+| Endpoint | Antes | Agora |
+|---|---|---|
+| `GET /usuario/{id}` | singular | **`GET /usuarios/{id}`**; a rota singular foi removida |
+| `POST /login` | token em texto puro | `200 {"token": "..."}`, `application/json` |
+| `POST /login` com falha | mensagem do bcrypt (vazava se o e-mail existe) | `401 {"erro":"e-mail ou senha inválidos"}` |
+| `POST /usuarios` | resposta incluía `senha` (hash) | sem `senha`; duplicado → **409** |
+| `PUT /usuarios/{id}` | exigia senha; 200 `null` | sem senha; **204**; nick/e-mail de outro → 409 |
+| `DELETE /publicacoes/{id}` | exigia corpo JSON | sem corpo; 204 |
+| `GET /publicacoes/usuario/{id}` | um objeto | **array** (mais recentes primeiro) |
+| `POST /publicacoes` | `autor_id` do corpo era aceito | ignorado (autor = token); inválido → 400 |
+| `POST .../curtir` repetido | 500 | 204 (idempotente) |
+| `POST /usuarios/{id}/seguir` a si mesmo | 403, mas gravava | 403 sem efeito; usuário inexistente → 404 |
+| `GET /usuarios/{id}/seguindo` | devolvia o próprio usuário | devolve quem ele segue |
+| id inexistente (GET/PUT/DELETE/curtir) | 200 zerado / panic / 500 | **404** |
+| id não numérico | 204/404 | **400** |
+| qualquer 5xx | mensagem crua do MySQL | `{"erro":"erro interno do servidor"}` (detalhe no log) |
+| qualquer 204 | escrevia `null` | sem corpo |
+| CORS | inexistente | `CORS_ORIGIN` (padrão `http://localhost:5173`), preflight 204 |
 
 ## Achados fora de escopo
 - **N14** (baixa): a resposta do `POST /publicacoes` mostra `criadaEm: 0001-01-01`. O default fica no banco e não volta para a struct (o mesmo vale para `criadoem` do usuário).
@@ -151,7 +172,13 @@ _Nenhuma ainda._
 - README cita GORM "opcional" e `docker-compose` (v1).
 
 ## Ideias futuras
-_(nada ainda)_
+- **Login devolver também o `id`** (`{"id", "token"}`). O front precisa saber quem está logado; hoje teria que decodificar o payload do JWT. Muda o contrato: decidir no início da fase B.
+- **DTOs de entrada/saída** em vez de reaproveitar `models.Usuario` (o N1 foi resolvido limpando o campo; `json:"-"` com DTO seria seguro por padrão).
+- `atualizar-senha` validar a força da senha nova com `validarSenha` (hoje aceita qualquer coisa).
+- Login: comparar com um hash fictício quando o e-mail não existe, para o tempo de resposta não denunciar a existência do e-mail (timing).
+- `SECRET_KEY` com tamanho mínimo (32 bytes para HS256).
+- Configurar o logger do GORM para não imprimir `record not found` como erro (agora o 404 passa por ele).
+- Paginação em feed/listas, rate limit no login, refresh token: fora do escopo, como combinado.
 
 ## Próximo passo
-Usuário escreve "continuar" → Fase 2. Antes de codar, confirmar com o usuário: (a) os itens `[contrato]` da fumaça; (b) a estratégia dos testes Go (integração contra um banco `devbook_test` no MySQL do compose, ou outra); (c) o schema em `schema.sql` via `docker-entrypoint-initdb.d` ou em código. Depois, começar pelo H1 (teste primeiro).
+Usuário revisa/mergeia a fase 2 e escreve "continuar" → **Fase B (front Vue 3 em `web/`, branch `feat/web-vue`)**. Antes de codar, decidir com o usuário: stack do front (Vite + Vue 3 + TS? router/pinia? CSS), onde guardar o token, e a ideia "login devolve id".
