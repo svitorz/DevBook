@@ -3,7 +3,7 @@
 > Memória do projeto. Ler ANTES de qualquer coisa ao iniciar sessão ou após compactação.
 
 ## Fase atual
-**Fase B0 — fundação do front (concluída, aguardando "continuar")**
+**Fase B1 — cadastro, login, logout e guarda de rotas (concluída, aguardando "continuar")**
 Branch: `feat/web-vue` (criada de `main@5572166`; a fase A inteira foi mergeada via PR #1 e PR #2).
 
 ### Decisões da Fase B (confirmadas pelo usuário em 2026-11-19)
@@ -23,7 +23,13 @@ Branch: `feat/web-vue` (criada de `main@5572166`; a fase A inteira foi mergeada 
 - [x] B0 cliente HTTP, endpoints, tipos, sessão (pinia + localStorage) e 13 testes Vitest (`ad983d0`)
 - [x] B0 prova no navegador: `http://localhost:5173` chamou a API real e recebeu 401 via CORS
 - [x] B0 arquivos de demonstração do template removidos (com confirmação do usuário)
-- [ ] B1 cadastro, login, logout, guarda de rotas
+- [x] B1 guarda de rotas + `?redirect=` seguro + sessão expirada vai para /entrar (`1d6f256`)
+- [x] B1 tela de login (`b0a8d0d`; erro de tipo no teste corrigido em `1abcf57`)
+- [x] B1 tela de cadastro com login automático (`6940be8`)
+- [x] B1 layout com cabeçalho e Sair (`97c3edc`)
+- [x] B1 39 testes Vitest + build passando
+- [x] B1 prova no navegador contra a API real: deslogado em `/` vai para `/entrar?redirect=/`; cadastro com senha fraca mostra o 400 da API; cadastro válido entra direto no feed; F5 mantém a sessão; Sair limpa o storage e vai para `/entrar`; nick duplicado mostra o 409; senha errada mostra o 401; login correto respeita `?redirect=/?de=link`
+- [ ] B1 sessão expirada (401 com token): coberta só por teste unitário. A tela inicial ainda não chama a API; a prova real fica para a B2, quando o feed fizer requisições
 - [ ] B2 feed
 - [ ] B3 perfil e social
 - [ ] B4 minha conta
@@ -166,6 +172,8 @@ Não cobertos pela fumaça (provar com teste Go na fase 2): H1 (registro duplica
 - 2026-11-19 — **Pool por injeção, não global**. Os handlers viraram métodos de `controllers.Controllers{db}`, e as rotas viraram funções `rotasX(c)`. Alternativa descartada: `var DB *gorm.DB` global no pacote `database`. Seria um diff menor (só troca o `Conectar()` por `database.DB`), mas cria estado global: os testes não conseguem trocar o banco sem mutar um global compartilhado, o que impede `t.Parallel()`, e a dependência fica escondida. Custo da escolha: assinatura nova em todos os handlers e um diff mecânico maior. Não configurei `SetMaxOpenConns` e afins: os defaults bastam para um projeto de estudo.
 - 2026-11-19 — **Efeitos colaterais da refatoração** (inevitáveis, porque o código removido era o próprio bug): (1) em `BuscarUsuarios`, o nil-deref quando `Conectar` falhava (parte do H4) deixou de existir; (2) o vazamento de pool no `CriarPublicacao` (parte do H2) deixou de existir. Nenhum dos dois era observável pela fumaça. O primeiro só acontecia com o banco fora do ar; a prova do segundo é a contagem de conexões acima. Agora uma falha de banco no boot dá `log.Fatal` com a mensagem, e não durante uma requisição.
 - 2026-11-19 — **Fase B0, decisões técnicas**: (1) cliente próprio sobre `fetch` (~60 linhas) em vez de axios: ele cobre JSON, token, `ApiError` e 204 sem dependência; (2) um 401 *com token enviado* encerra a sessão (token expirado), mas um 401 sem token (login errado) não, senão o login com senha errada "deslogaria"; (3) `configurarCliente` injeta o token e o callback no `main.ts`, para o cliente não importar a store (evita dependência circular e facilita teste); (4) Vite com `strictPort: 5173`, porque se a porta estiver ocupada ele pularia para 5174 e o CORS bloquearia em silêncio; (5) sem alias `@/`: imports relativos bastam no tamanho atual.
+- 2026-11-19 — **Fase B1, decisões técnicas**: (1) guarda única por `meta.soVisitante`: o padrão é exigir sessão, então rota nova nasce protegida (o erro "esqueci de proteger" vira o erro inofensivo "esqueci de liberar"); (2) `?redirect=` só aceita caminho interno: `//host` e `/\host` seriam open redirect; (3) `aoExpirarSessao` navega por nome para `/entrar`, porque o `push('/')` da B0 era navegação duplicada quando o usuário já estava em `/`: a guarda não rodava e a tela ficava aberta sem sessão; (4) as regras de senha **não** são repetidas no front: a API é a fonte da verdade e a tela mostra a mensagem dela. Descartado: validar em JS também, que daria feedback antes do envio, mas duplicaria a regra em dois lugares; (5) cadastro faz login automático. Se só o login falhar, vai para `/entrar?conta=criada`, porque reenviar daria 409; (6) logout é só local, porque o JWT é stateless e a API não tem revogação. Um token copiado vale até expirar (6h). Ver Ideias futuras; (7) `/entrar` e `/cadastro` são lazy (code splitting por rota, nativo do Vite).
+- 2026-11-19 — **Erro de processo (B1)**: o `b0a8d0d` foi comitado com o `vue-tsc` falhando, porque o `grep` no fim do encadeamento mascarou o código de saída (mesma classe do erro do H6). A correção veio em `1abcf57`. Desde então o front só é comitado depois de um script que roda testes e build e devolve o código de saída real.
 - 2026-11-19 — **Fase 2, decisões técnicas**: (1) "não encontrado" via `Take` + `gorm.ErrRecordNotFound`, traduzido em `responderErroDeBusca`; (2) 409/404 de escrita via `gorm.Config{TranslateError: true}` (`ErrDuplicatedKey`/`ErrForeignKeyViolated`), em vez de olhar o número do erro MySQL (seria acoplar ao driver); (3) curtir idempotente com `OnConflict{DoNothing}`, o mesmo padrão do Follow; (4) CORS escrito à mão (~20 linhas) em vez de `rs/cors`, sem lib nova; envolve o router inteiro porque o mux dá 405 ao OPTIONS; (5) N1 resolvido limpando `Senha` antes da resposta (DTO ficou em Ideias futuras); (6) H13 removeu a rota singular em vez de manter alias, porque ainda não há cliente.
 - 2026-11-19 — **Erro de processo (H6)**: o commit `14e6b16` saiu só com o teste, porque o `&&` checava o `grep` e não o `go test`. Não reescrevi o histórico (pede confirmação); a correção veio em `4266df2`. Desde então os commits só rodam se o `go test` sair com 0.
 - 2026-11-19 — Script de fumaça: o esperado de cada item é o contrato-alvo, e cada item isola um bug. Na primeira versão do script, o H2 contaminava os testes de ownership e eu tinha errado a direção do follow. Corrigi antes de registrar o baseline.
@@ -198,6 +206,8 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 - Token é parseado duas vezes por request (middleware + `GetUserID`); `getToken` não checa o esquema `Bearer`.
 - Chave JSON inconsistente: `criadoem` (usuário) vs `criadaEm` (publicação).
 - README cita GORM "opcional" e `docker-compose` (v1).
+- Mensagens de validação da API com erros de digitação: `" e-mail inserido é inválido"` (espaço no início) e `"o senha é obrigatório"` (gênero). O front mostra essas mensagens como vêm.
+- A introdução do README da raiz ainda descreve o projeto só como "API RESTful".
 
 ## Ideias futuras
 - **DTOs de entrada/saída** em vez de reaproveitar `models.Usuario` (o N1 foi resolvido limpando o campo; `json:"-"` com DTO seria seguro por padrão).
@@ -205,7 +215,8 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 - Login: comparar com um hash fictício quando o e-mail não existe, para o tempo de resposta não denunciar a existência do e-mail (timing).
 - `SECRET_KEY` com tamanho mínimo (32 bytes para HS256).
 - Configurar o logger do GORM para não imprimir `record not found` como erro (agora o 404 passa por ele).
+- Logout com revogação (lista de tokens revogados ou expiração curta + refresh), já que hoje o "Sair" só apaga o token local.
 - Paginação em feed/listas, rate limit no login, refresh token: fora do escopo, como combinado.
 
 ## Próximo passo
-Usuário escreve "continuar" → **B1**: telas de cadastro e login, logout, guarda de rotas (deslogado → /entrar) e layout com cabeçalho.
+Usuário escreve "continuar" → **B2**: feed (listar publicações próprias e de quem segue, criar, editar e excluir as próprias, curtir/descurtir). Inclui a prova real da sessão expirada.
