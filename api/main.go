@@ -2,6 +2,7 @@ package main
 
 import (
 	"api/src/config"
+	"api/src/database"
 	"api/src/router"
 	"fmt"
 	"log"
@@ -10,8 +11,14 @@ import (
 
 func main() {
 	config.Carregar()
-	fmt.Println("Escutando na porta:", config.Port)
-	r := router.Gerar()
 
+	db, err := database.Conectar()
+	if err != nil {
+		log.Fatal("erro ao conectar no banco: ", err)
+	}
+
+	r := router.Gerar(db)
+
+	fmt.Println("Escutando na porta:", config.Port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.Port), r))
 }

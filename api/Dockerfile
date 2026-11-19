@@ -1,14 +1,12 @@
-FROM golang:1.24 
+FROM golang:1.24
 
-WORKDIR .
+WORKDIR /app
 
-COPY go.mod go.sum .
+COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
-RUN go build -o main .
+RUN go build -o /usr/local/bin/devbook-api .
 
-EXPOSE 8080 
-
-CMD ["./main"]
+CMD ["devbook-api"]

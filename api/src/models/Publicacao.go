@@ -7,13 +7,17 @@ import (
 )
 
 type Publicacao struct {
-	ID        uint64    `json:"id,omitempty"`
-	Titulo    string    `json:"titulo,omitempty"`   // max 50
-	Conteudo  string    `json:"conteudo,omitempty"` // max 300
-	AutorID   uint64    `json:"autor_id,omitempty"`
-	AutorNick string    `json:"autor_nick,omitempty"`
-	Curtidas  uint64    `json:"curtidas"`
-	CriadaEm  time.Time `json:"criadaEm"`
+	ID        uint64    `json:"id,omitempty" gorm:"column:id;primaryKey"`
+	Titulo    string    `json:"titulo,omitempty" gorm:"column:titulo"`     // max 50
+	Conteudo  string    `json:"conteudo,omitempty" gorm:"column:conteudo"` // max 300
+	AutorID   uint64    `json:"autor_id,omitempty" gorm:"column:autor_id"`
+	AutorNick string    `json:"autor_nick,omitempty" gorm:"->"`
+	Curtidas  uint64    `json:"curtidas" gorm:"-"`
+	CriadaEm  time.Time `json:"criadaEm" gorm:"column:criadaEm;default:CURRENT_TIMESTAMP"`
+}
+
+func (Publicacao) TableName() string {
+	return "PUBLICACOES"
 }
 
 func (publicacao *Publicacao) Preparar() error {

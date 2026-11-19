@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"api/src/auth"
-	"api/src/database"
 	"api/src/models"
 	"api/src/repository"
 	"api/src/responses"
@@ -13,7 +12,7 @@ import (
 	"net/http"
 )
 
-func Login(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) Login(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		responses.Err(w, http.StatusUnprocessableEntity, err)
@@ -27,15 +26,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer db.Close()
-
-	repository := repository.NewUsersRepository(db)
+	repository := repository.NewUsersRepository(c.db)
 
 	usuarioSalvoNoBanco, err := repository.FindByEmail(usuario.Email)
 	if err != nil {

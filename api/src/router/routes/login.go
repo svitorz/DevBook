@@ -5,9 +5,11 @@ import (
 	"net/http"
 )
 
-var loginRoutes = Route{
-	URI:                "/login",
-	Metodo:             http.MethodPost,
-	Funcao:             controllers.Login,
-	RequerAutenticacao: false,
+func rotaLogin(c *controllers.Controllers) Route {
+	return Route{
+		URI:                "/login",
+		Metodo:             http.MethodPost,
+		Funcao:             c.Login,
+		RequerAutenticacao: false,
+	}
 }

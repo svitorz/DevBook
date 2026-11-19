@@ -2,39 +2,45 @@ package database
 
 import (
 	"api/src/config"
-	"database/sql"
 	"fmt"
 	"log"
 
-	_ "github.com/go-sql-driver/mysql"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
-func Conectar() (*sql.DB, error) {
-	db, err := sql.Open("mysql", config.StringConexaoBanco)
+// Conectar abre o pool de conexões e prepara o schema. Deve ser chamada
+// UMA vez no boot; o *gorm.DB retornado é seguro para uso concorrente.
+func Conectar() (*gorm.DB, error) {
+	db, err := gorm.Open(mysql.Open(config.StringConexaoBanco), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 
-	if err = db.Ping(); err != nil {
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+	if err = sqlDB.Ping(); err != nil {
 		return nil, err
 	}
 	if err := CriarBancoSeNecessario(db); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	if err := CriarTabelas(db); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	return db, nil
 }
 
-func CriarBancoSeNecessario(db *sql.DB) error {
-	_, err := db.Exec("CREATE DATABASE IF NOT EXISTS devbook")
+func CriarBancoSeNecessario(db *gorm.DB) error {
+	err := db.Exec("CREATE DATABASE IF NOT EXISTS devbook").Error
 	if err != nil {
 		return fmt.Errorf("erro ao criar banco: %w", err)
 	}
 
-	_, err = db.Exec("USE devbook")
+	err = db.Exec("USE devbook").Error
 	if err != nil {
 		return fmt.Errorf("erro ao usar banco: %w", err)
 	}
@@ -42,7 +48,7 @@ func CriarBancoSeNecessario(db *sql.DB) error {
 	return nil
 }
 
-func CriarTabelas(db *sql.DB) error {
+func CriarTabelas(db *gorm.DB) error {
 	comandos := []string{
 		`CREATE TABLE IF NOT EXISTS USUARIOS (
 			id INT AUTO_INCREMENT PRIMARY KEY,
@@ -81,7 +87,7 @@ func CriarTabelas(db *sql.DB) error {
 	}
 
 	for _, comando := range comandos {
-		if _, err := db.Exec(comando); err != nil {
+		if err := db.Exec(comando).Error; err != nil {
 			return fmt.Errorf("erro ao criar tabela: %w", err)
 		}
 	}

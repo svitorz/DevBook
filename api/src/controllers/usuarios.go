@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"api/src/auth"
-	"api/src/database"
 	"api/src/models"
 	"api/src/repository"
 	"api/src/responses"
@@ -17,7 +16,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func CriarUsuario(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) CriarUsuario(w http.ResponseWriter, r *http.Request) {
 	request, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		responses.Err(w, http.StatusUnprocessableEntity, err)
@@ -35,14 +34,7 @@ func CriarUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-	defer db.Close()
-
-	repository := repository.NewUsersRepository(db)
+	repository := repository.NewUsersRepository(c.db)
 	usuario.ID, err = repository.Store(usuario)
 	if err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
@@ -52,17 +44,10 @@ func CriarUsuario(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusCreated, usuario)
 }
 
-func BuscarUsuarios(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) BuscarUsuarios(w http.ResponseWriter, r *http.Request) {
 	nomeOuNick := strings.ToLower((r.URL.Query().Get("usuario")))
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-	}
-
-	defer db.Close()
-
-	rep := repository.NewUsersRepository(db)
+	rep := repository.NewUsersRepository(c.db)
 	users, err := rep.ShowAll(nomeOuNick)
 	if err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
@@ -72,7 +57,7 @@ func BuscarUsuarios(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, users)
 }
 
-func BuscarUsuario(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) BuscarUsuario(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	userID, err := strconv.ParseUint(params["usuarioId"], 10, 64)
@@ -81,15 +66,7 @@ func BuscarUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer db.Close()
-
-	repository := repository.NewUsersRepository(db)
+	repository := repository.NewUsersRepository(c.db)
 	user, err := repository.Show(userID)
 	if err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
@@ -99,7 +76,7 @@ func BuscarUsuario(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, user)
 }
 
-func AtualizarUsuario(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) AtualizarUsuario(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	userID, err := strconv.ParseUint(params["usuarioId"], 10, 64)
@@ -137,15 +114,7 @@ func AtualizarUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer db.Close()
-
-	repository := repository.NewUsersRepository(db)
+	repository := repository.NewUsersRepository(c.db)
 	if err = repository.Update(userID, user); err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
 		return
@@ -154,7 +123,7 @@ func AtualizarUsuario(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, nil)
 }
 
-func DeletarUsuario(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) DeletarUsuario(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	userID, err := strconv.ParseUint(params["usuarioId"], 10, 64)
 	if err != nil {
@@ -172,15 +141,7 @@ func DeletarUsuario(w http.ResponseWriter, r *http.Request) {
 		responses.Err(w, http.StatusForbidden, errors.New("não é possível deletar um usuário se não o seu"))
 		return
 	}
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer db.Close()
-
-	repository := repository.NewUsersRepository(db)
+	repository := repository.NewUsersRepository(c.db)
 	if err = repository.Destroy(userID); err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
 		return
@@ -189,7 +150,7 @@ func DeletarUsuario(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusNoContent, nil)
 }
 
-func SeguirUsuario(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) SeguirUsuario(w http.ResponseWriter, r *http.Request) {
 	seguidorID, err := auth.GetUserID(r)
 	if err != nil {
 		responses.Err(w, http.StatusUnauthorized, err)
@@ -207,15 +168,7 @@ func SeguirUsuario(w http.ResponseWriter, r *http.Request) {
 		responses.Err(w, http.StatusForbidden, errors.New("Não é possível seguir você mesmo."))
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer db.Close()
-
-	repository := repository.NewUsersRepository(db)
+	repository := repository.NewUsersRepository(c.db)
 
 	if err = repository.Follow(usuarioId, seguidorID); err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
@@ -225,7 +178,7 @@ func SeguirUsuario(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusNoContent, nil)
 }
 
-func PararDeSeguirUsuario(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) PararDeSeguirUsuario(w http.ResponseWriter, r *http.Request) {
 	seguidorID, err := auth.GetUserID(r)
 	if err != nil {
 		responses.Err(w, http.StatusUnauthorized, err)
@@ -243,15 +196,7 @@ func PararDeSeguirUsuario(w http.ResponseWriter, r *http.Request) {
 		responses.Err(w, http.StatusForbidden, errors.New("Não é possível parar de seguir você mesmo."))
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer db.Close()
-
-	repository := repository.NewUsersRepository(db)
+	repository := repository.NewUsersRepository(c.db)
 	if err = repository.Unfollow(usuarioId, seguidorID); err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
 		return
@@ -260,7 +205,7 @@ func PararDeSeguirUsuario(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusNoContent, nil)
 }
 
-func BuscarSeguidores(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) BuscarSeguidores(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	usuarioId, err := strconv.ParseUint(params["usuarioId"], 10, 64)
 	if err != nil {
@@ -268,15 +213,7 @@ func BuscarSeguidores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer db.Close()
-
-	repository := repository.NewUsersRepository(db)
+	repository := repository.NewUsersRepository(c.db)
 	seguidores, err := repository.GetFollowers(usuarioId)
 	if err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
@@ -286,7 +223,7 @@ func BuscarSeguidores(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, seguidores)
 }
 
-func BuscarSeguindo(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) BuscarSeguindo(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	usuarioId, err := strconv.ParseUint(params["usuarioId"], 10, 64)
 	if err != nil {
@@ -294,15 +231,7 @@ func BuscarSeguindo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer db.Close()
-
-	repository := repository.NewUsersRepository(db)
+	repository := repository.NewUsersRepository(c.db)
 	seguidores, err := repository.GetFollowing(usuarioId)
 	if err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
@@ -312,7 +241,7 @@ func BuscarSeguindo(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, seguidores)
 }
 
-func AtualizarSenha(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) AtualizarSenha(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	userID, err := strconv.ParseUint(params["usuarioId"], 10, 64)
@@ -343,15 +272,7 @@ func AtualizarSenha(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer db.Close()
-
-	repository := repository.NewUsersRepository(db)
+	repository := repository.NewUsersRepository(c.db)
 	senhaAntiga, err := repository.GetPassword(userID)
 	if err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)

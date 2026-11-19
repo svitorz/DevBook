@@ -2,198 +2,129 @@ package repository
 
 import (
 	"api/src/models"
-	"database/sql"
+
+	"gorm.io/gorm"
 )
 
+const colunasPublicacao = "PUBLICACOES.id, PUBLICACOES.titulo, PUBLICACOES.conteudo, PUBLICACOES.autor_id, PUBLICACOES.criadaEm, USUARIOS.nick AS autor_nick"
+
 type publicacoes struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func NewPostsRepository(db *sql.DB) *publicacoes {
+func NewPostsRepository(db *gorm.DB) *publicacoes {
 	return &publicacoes{db}
 }
 
 func (p publicacoes) Store(publicacao models.Publicacao) (uint64, error) {
-	stmt, err := p.db.Prepare("INSERT INTO PUBLICACOES(titulo, conteudo, autor_id) VALUES (?,?,?)")
-	if err != nil {
+	if err := p.db.Create(&publicacao).Error; err != nil {
 		return 0, err
 	}
 
-	defer stmt.Close()
-
-	result, err := stmt.Exec(publicacao.Titulo, publicacao.Conteudo, publicacao.AutorID)
-	if err != nil {
-		return 0, err
-	}
-
-	lastInsertId, err := result.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return uint64(lastInsertId), nil
+	return publicacao.ID, nil
 }
 
 func (p publicacoes) FindById(publicacaoID uint64) (models.Publicacao, error) {
-	rows, err := p.db.Query(`SELECT p.id, p.titulo, p.conteudo, p.autor_id, p.criadaEm, u.nick FROM PUBLICACOES p INNER JOIN USUARIOS u ON u.id=p.autor_id WHERE p.id = ?`, publicacaoID)
-	if err != nil {
+	var post models.Publicacao
+
+	if err := p.db.
+		Select(colunasPublicacao).
+		Joins("INNER JOIN USUARIOS ON USUARIOS.id = PUBLICACOES.autor_id").
+		Where("PUBLICACOES.id = ?", publicacaoID).
+		Limit(1).
+		Find(&post).Error; err != nil {
 		return models.Publicacao{}, err
 	}
 
-	defer rows.Close()
-
-	var post models.Publicacao
-
-	if rows.Next() {
-		if err = rows.Scan(
-			&post.ID,
-			&post.Titulo,
-			&post.Conteudo,
-			&post.AutorID,
-			&post.CriadaEm,
-			&post.AutorNick,
-		); err != nil {
-			return models.Publicacao{}, err
-		}
+	if post.ID != 0 {
+		var err error
 		post.Curtidas, err = p.getLikes(post.ID)
 		if err != nil {
 			return models.Publicacao{}, err
 		}
 	}
+
 	return post, nil
 }
 
 func (p publicacoes) Index(userId uint64) ([]models.Publicacao, error) {
-	rows, err := p.db.Query(`SELECT DISTINCT  p.id, p.titulo, p.conteudo, p.autor_id, p.criadaEm, u.nick 
-				FROM PUBLICACOES p 
-				INNER JOIN USUARIOS u ON u.id = p.autor_id 
-				LEFT JOIN SEGUIDORES s ON p.autor_id = s.usuario_id 
-				WHERE u.id = ? OR s.seguidor_id = ?
-				ORDER BY p.id DESC;`, userId, userId)
-	if err != nil {
+	var publicacoes []models.Publicacao
+
+	if err := p.db.
+		Select("DISTINCT "+colunasPublicacao).
+		Joins("INNER JOIN USUARIOS ON USUARIOS.id = PUBLICACOES.autor_id").
+		Joins("LEFT JOIN SEGUIDORES s ON PUBLICACOES.autor_id = s.usuario_id").
+		Where("USUARIOS.id = ? OR s.seguidor_id = ?", userId, userId).
+		Order("PUBLICACOES.id DESC").
+		Find(&publicacoes).Error; err != nil {
 		return nil, err
 	}
 
-	defer rows.Close()
-
-	var publicacoes []models.Publicacao
-
-	for rows.Next() {
-		var publicacao models.Publicacao
-
-		if err = rows.Scan(
-			&publicacao.ID,
-			&publicacao.Titulo,
-			&publicacao.Conteudo,
-			&publicacao.AutorID,
-			&publicacao.CriadaEm,
-			&publicacao.AutorNick,
-		); err != nil {
-			return nil, err
-		}
-		publicacao.Curtidas, err = p.getLikes(publicacao.ID)
+	for i := range publicacoes {
+		curtidas, err := p.getLikes(publicacoes[i].ID)
 		if err != nil {
 			return nil, err
 		}
-		publicacoes = append(publicacoes, publicacao)
+		publicacoes[i].Curtidas = curtidas
 	}
+
 	return publicacoes, nil
 }
 
 func (p publicacoes) Update(publicacaoId uint64, publicacao models.Publicacao) error {
-	statement, err := p.db.Prepare("UPDATE PUBLICACOES SET titulo = ?, conteudo = ? where id = ?")
-	if err != nil {
-		return err
-	}
-
-	defer statement.Close()
-
-	if _, err = statement.Exec(publicacao.Titulo, publicacao.Conteudo, publicacaoId); err != nil {
-		return err
-	}
-
-	return nil
+	return p.db.
+		Model(&models.Publicacao{}).
+		Where("id = ?", publicacaoId).
+		Select("titulo", "conteudo").
+		Updates(publicacao).Error
 }
 
 func (p publicacoes) Destroy(publicacaoId uint64) error {
-	statement, err := p.db.Prepare("DELETE FROM PUBLICACOES where id = ?")
-	if err != nil {
-		return err
-	}
-
-	defer statement.Close()
-
-	if _, err = statement.Exec(publicacaoId); err != nil {
-		return err
-	}
-
-	return nil
+	return p.db.Delete(&models.Publicacao{}, publicacaoId).Error
 }
 
 func (p publicacoes) FindByUserId(userId uint64) (models.Publicacao, error) {
-	rows, err := p.db.Query(`SELECT p.id, p.titulo, p.conteudo, p.autor_id, p.criadaEm, u.nick FROM PUBLICACOES p INNER JOIN USUARIOS u ON u.id=p.autor_id WHERE p.autor_id = ?`, userId)
-	if err != nil {
+	var post models.Publicacao
+
+	if err := p.db.
+		Select(colunasPublicacao).
+		Joins("INNER JOIN USUARIOS ON USUARIOS.id = PUBLICACOES.autor_id").
+		Where("PUBLICACOES.autor_id = ?", userId).
+		Limit(1).
+		Find(&post).Error; err != nil {
 		return models.Publicacao{}, err
 	}
 
-	defer rows.Close()
-
-	var post models.Publicacao
-
-	if rows.Next() {
-		if err = rows.Scan(
-			&post.ID,
-			&post.Titulo,
-			&post.Conteudo,
-			&post.AutorID,
-			&post.CriadaEm,
-			&post.AutorNick,
-		); err != nil {
-			return models.Publicacao{}, err
-		}
+	if post.ID != 0 {
+		var err error
 		post.Curtidas, err = p.getLikes(post.ID)
 		if err != nil {
 			return models.Publicacao{}, err
 		}
 	}
+
 	return post, nil
 }
 
 func (p publicacoes) LikePost(userId uint64, postId uint64) error {
-	stmt, err := p.db.Prepare(`INSERT INTO likes (user_id, post_id) VALUES (?, ?)`)
-	if err != nil {
-		return err
-	}
-
-	defer stmt.Close()
-
-	if _, err := stmt.Exec(userId, postId); err != nil {
-		return err
-	}
-	return nil
+	return p.db.Create(&models.Curtida{UserID: userId, PostID: postId}).Error
 }
 
 func (p publicacoes) UnlikePost(userId uint64, postId uint64) error {
-	stmt, err := p.db.Prepare(`DELETE FROM likes WHERE user_id = ? AND post_id = ?`)
-	if err != nil {
-		return err
-	}
-
-	defer stmt.Close()
-
-	if _, err := stmt.Exec(userId, postId); err != nil {
-		return err
-	}
-	return nil
+	return p.db.
+		Where("user_id = ? AND post_id = ?", userId, postId).
+		Delete(&models.Curtida{}).Error
 }
 
 func (p publicacoes) getLikes(postId uint64) (uint64, error) {
-	var count uint64
+	var count int64
 
-	err := p.db.QueryRow("SELECT COUNT(*) FROM likes WHERE post_id = ?", postId).Scan(&count)
-	if err != nil {
+	if err := p.db.
+		Model(&models.Curtida{}).
+		Where("post_id = ?", postId).
+		Count(&count).Error; err != nil {
 		return 0, err
 	}
 
-	return count, nil
+	return uint64(count), nil
 }

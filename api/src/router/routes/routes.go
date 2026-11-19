@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"api/src/controllers"
 	"api/src/middleware"
 	"net/http"
 
@@ -14,10 +15,10 @@ type Route struct {
 	RequerAutenticacao bool
 }
 
-func Configurar(r *mux.Router) *mux.Router {
-	routes := userRoutes
-	routes = append(routes, loginRoutes)
-	routes = append(routes, postRoutes...)
+func Configurar(r *mux.Router, c *controllers.Controllers) *mux.Router {
+	routes := rotasUsuarios(c)
+	routes = append(routes, rotaLogin(c))
+	routes = append(routes, rotasPublicacoes(c)...)
 	for _, route := range routes {
 
 		if route.RequerAutenticacao {

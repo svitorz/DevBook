@@ -5,65 +5,67 @@ import (
 	"net/http"
 )
 
-var userRoutes = []Route{
-	{
-		URI:                "/usuarios",
-		Metodo:             http.MethodPost,
-		Funcao:             controllers.CriarUsuario,
-		RequerAutenticacao: false,
-	},
-	{
-		URI:                "/usuarios",
-		Metodo:             http.MethodGet,
-		Funcao:             controllers.BuscarUsuarios,
-		RequerAutenticacao: true,
-	},
-	{
-		URI:                "/usuario/{usuarioId}",
-		Metodo:             http.MethodGet,
-		Funcao:             controllers.BuscarUsuario,
-		RequerAutenticacao: true,
-	},
-	{
-		URI:                "/usuarios/{usuarioId}",
-		Metodo:             http.MethodPut,
-		Funcao:             controllers.AtualizarUsuario,
-		RequerAutenticacao: true,
-	},
-	{
-		URI:                "/usuarios/{usuarioId}",
-		Metodo:             http.MethodDelete,
-		Funcao:             controllers.DeletarUsuario,
-		RequerAutenticacao: false,
-	},
-	{
-		URI:                "/usuarios/{usuarioId}/seguir",
-		Metodo:             http.MethodPost,
-		Funcao:             controllers.SeguirUsuario,
-		RequerAutenticacao: true,
-	},
-	{
-		URI:                "/usuarios/{usuarioId}/parar-de-seguir",
-		Metodo:             http.MethodPost,
-		Funcao:             controllers.PararDeSeguirUsuario,
-		RequerAutenticacao: true,
-	},
-	{
-		URI:                "/usuarios/{usuarioId}/seguidores",
-		Metodo:             http.MethodGet,
-		Funcao:             controllers.BuscarSeguidores,
-		RequerAutenticacao: true,
-	},
-	{
-		URI:                "/usuarios/{usuarioId}/seguindo",
-		Metodo:             http.MethodGet,
-		Funcao:             controllers.BuscarSeguindo,
-		RequerAutenticacao: true,
-	},
-	{
-		URI:                "/usuarios/{usuarioId}/atualizar-senha",
-		Metodo:             http.MethodPost,
-		Funcao:             controllers.AtualizarSenha,
-		RequerAutenticacao: true,
-	},
+func rotasUsuarios(c *controllers.Controllers) []Route {
+	return []Route{
+		{
+			URI:                "/usuarios",
+			Metodo:             http.MethodPost,
+			Funcao:             c.CriarUsuario,
+			RequerAutenticacao: false,
+		},
+		{
+			URI:                "/usuarios",
+			Metodo:             http.MethodGet,
+			Funcao:             c.BuscarUsuarios,
+			RequerAutenticacao: true,
+		},
+		{
+			URI:                "/usuario/{usuarioId}",
+			Metodo:             http.MethodGet,
+			Funcao:             c.BuscarUsuario,
+			RequerAutenticacao: true,
+		},
+		{
+			URI:                "/usuarios/{usuarioId}",
+			Metodo:             http.MethodPut,
+			Funcao:             c.AtualizarUsuario,
+			RequerAutenticacao: true,
+		},
+		{
+			URI:                "/usuarios/{usuarioId}",
+			Metodo:             http.MethodDelete,
+			Funcao:             c.DeletarUsuario,
+			RequerAutenticacao: false,
+		},
+		{
+			URI:                "/usuarios/{usuarioId}/seguir",
+			Metodo:             http.MethodPost,
+			Funcao:             c.SeguirUsuario,
+			RequerAutenticacao: true,
+		},
+		{
+			URI:                "/usuarios/{usuarioId}/parar-de-seguir",
+			Metodo:             http.MethodPost,
+			Funcao:             c.PararDeSeguirUsuario,
+			RequerAutenticacao: true,
+		},
+		{
+			URI:                "/usuarios/{usuarioId}/seguidores",
+			Metodo:             http.MethodGet,
+			Funcao:             c.BuscarSeguidores,
+			RequerAutenticacao: true,
+		},
+		{
+			URI:                "/usuarios/{usuarioId}/seguindo",
+			Metodo:             http.MethodGet,
+			Funcao:             c.BuscarSeguindo,
+			RequerAutenticacao: true,
+		},
+		{
+			URI:                "/usuarios/{usuarioId}/atualizar-senha",
+			Metodo:             http.MethodPost,
+			Funcao:             c.AtualizarSenha,
+			RequerAutenticacao: true,
+		},
+	}
 }
