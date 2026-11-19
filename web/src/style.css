@@ -169,3 +169,65 @@ textarea {
   align-items: center;
   gap: 12px;
 }
+
+.titulo-secao {
+  font-size: 1rem;
+  margin: 0 0 12px;
+}
+
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.publicacao {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.publicacao-topo,
+.publicacao-rodape {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.autor {
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.publicacao-titulo {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.publicacao-conteudo {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.botao-curtir {
+  font: inherit;
+  color: var(--texto-suave);
+  background: none;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+
+.botao-curtir[aria-pressed='true'] {
+  color: var(--perigo);
+  border-color: var(--perigo);
+}
+
+.botao-texto.perigo {
+  color: var(--perigo);
+}
