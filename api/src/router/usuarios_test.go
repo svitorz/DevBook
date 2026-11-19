@@ -65,3 +65,33 @@ func TestN1_CadastroNaoExpoeSenha(t *testing.T) {
 		t.Fatalf("resposta expõe senha: %s", w.Body.String())
 	}
 }
+
+// N4: /seguindo lista quem o usuário segue (e não ele mesmo).
+func TestN4_SeguindoListaQuemOUsuarioSegue(t *testing.T) {
+	a := novaAPI(t)
+	aliceID, tokenAlice := a.criarUsuario("alice")
+	bobID, _ := a.criarUsuario("bob")
+	carolID, _ := a.criarUsuario("carol")
+
+	for _, alvo := range []uint64{bobID, carolID} {
+		w := a.req(http.MethodPost, "/usuarios/"+strconv.FormatUint(alvo, 10)+"/seguir", "", tokenAlice)
+		if w.Code >= 300 {
+			t.Fatalf("seguir %d: status %d", alvo, w.Code)
+		}
+	}
+
+	w := a.req(http.MethodGet, "/usuarios/"+strconv.FormatUint(aliceID, 10)+"/seguindo", "", tokenAlice)
+	esperarStatus(t, w, http.StatusOK)
+	var lista []struct {
+		ID uint64 `json:"id"`
+	}
+	decodificar(t, w, &lista)
+
+	ids := map[uint64]bool{}
+	for _, u := range lista {
+		ids[u.ID] = true
+	}
+	if len(lista) != 2 || !ids[bobID] || !ids[carolID] {
+		t.Fatalf("seguindo = %s; esperado bob (%d) e carol (%d)", w.Body.String(), bobID, carolID)
+	}
+}

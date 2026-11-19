@@ -111,7 +111,8 @@ func (u usuarios) GetFollowing(usuarioId uint64) ([]models.Usuario, error) {
 
 	if err := u.db.
 		Select(colunasUsuario).
-		Joins("INNER JOIN SEGUIDORES s ON s.seguidor_id = USUARIOS.id").
+		// Quem usuarioId segue: linhas em que ele é o seguidor; o JOIN traz o seguido.
+		Joins("INNER JOIN SEGUIDORES s ON s.usuario_id = USUARIOS.id").
 		Where("s.seguidor_id = ?", usuarioId).
 		Find(&users).Error; err != nil {
 		return nil, err
