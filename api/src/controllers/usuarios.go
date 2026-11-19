@@ -166,6 +166,7 @@ func (c *Controllers) SeguirUsuario(w http.ResponseWriter, r *http.Request) {
 
 	if seguidorID == usuarioId {
 		responses.Err(w, http.StatusForbidden, errors.New("Não é possível seguir você mesmo."))
+		return
 	}
 
 	repository := repository.NewUsersRepository(c.db)
@@ -194,6 +195,7 @@ func (c *Controllers) PararDeSeguirUsuario(w http.ResponseWriter, r *http.Reques
 
 	if seguidorID == usuarioId {
 		responses.Err(w, http.StatusForbidden, errors.New("Não é possível parar de seguir você mesmo."))
+		return
 	}
 
 	repository := repository.NewUsersRepository(c.db)
