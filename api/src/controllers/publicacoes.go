@@ -27,13 +27,12 @@ func (c *Controllers) CriarPublicacao(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var publicacao models.Publicacao
-
-	publicacao.AutorID = userId
-
 	if err = json.Unmarshal(request, &publicacao); err != nil {
 		responses.Err(w, http.StatusForbidden, err)
 		return
 	}
+	// Depois do Unmarshal: o autor vem do token, nunca do corpo.
+	publicacao.AutorID = userId
 
 	if err := publicacao.Preparar(); err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
