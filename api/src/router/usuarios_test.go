@@ -51,3 +51,17 @@ func TestH8_AtualizarPerfilSemSenha(t *testing.T) {
 		t.Fatalf("nome no banco = %q", nome)
 	}
 }
+
+// N1: a resposta do cadastro não pode expor o hash da senha.
+func TestN1_CadastroNaoExpoeSenha(t *testing.T) {
+	a := novaAPI(t)
+	w := a.req(http.MethodPost, "/usuarios",
+		`{"nome":"Alice","nick":"alice","email":"alice@devbook.test","senha":"Senha@123"}`, "")
+	esperarStatus(t, w, http.StatusCreated)
+
+	var corpo map[string]any
+	decodificar(t, w, &corpo)
+	if _, tem := corpo["senha"]; tem {
+		t.Fatalf("resposta expõe senha: %s", w.Body.String())
+	}
+}

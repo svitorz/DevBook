@@ -41,6 +41,7 @@ func (c *Controllers) CriarUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	usuario.Senha = "" // nunca devolver o hash (omitempty remove o campo)
 	responses.JSON(w, http.StatusCreated, usuario)
 }
 
