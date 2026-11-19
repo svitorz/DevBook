@@ -6,14 +6,9 @@
 **Fase 0 — orientação (concluída, aguardando "continuar")**
 Branch: `chore/api-hardening` (criada a partir de `main@fedaf99`).
 
-## ⚠️ Bloqueio / decisão pendente
-O working tree tem uma **migração para GORM NÃO comitada** (go.mod, database, models, repository,
-controllers + `models/Curtida.go`, `models/Seguidor.go`). Isso contradiz a regra "não introduza ORM".
-Precisa de decisão antes da Fase 1:
-- (recomendado) preservar o WIP num branch `wip/gorm` e basear o hardening no `database/sql` do HEAD;
-- ou adotar o GORM como baseline (comitar o WIP) e seguir com ele.
-Até a decisão, o WIP continua não comitado no working tree (nada foi descartado).
-A análise abaixo é sobre o **working tree** (o que compila hoje); diferenças relevantes do HEAD são citadas.
+## Baseline
+**GORM** (decisão do usuário, 2026-11-19). O WIP de migração foi comitado como baseline em `a10bf17`.
+A análise abaixo é sobre esse código; diferenças do `database/sql` antigo (`fedaf99`) são citadas como "HEAD".
 
 ## Checklist
 ### Fase 0
@@ -25,10 +20,10 @@ A análise abaixo é sobre o **working tree** (o que compila hoje); diferenças 
 - [ ] Subir o stack de verdade → movido para a Fase 1 (Fase 0 não altera nada; `docker compose --env-file .env.example config` foi usado para validar H11)
 
 ### Fase 1 — rede de segurança
-- [ ] Decisão GORM vs database/sql
+- [x] Decisão GORM vs database/sql → GORM
 - [ ] compose + `.env.example` coerentes, stack sobe
 - [ ] Script de fumaça cobrindo todos os endpoints + resultado atual registrado
-- [ ] Um `*sql.DB` (pool) criado no boot e injetado
+- [ ] Um `*gorm.DB` (pool) criado no boot e injetado
 
 ### Fase 2 — correções (pendente)
 
@@ -71,6 +66,8 @@ A análise abaixo é sobre o **working tree** (o que compila hoje); diferenças 
 - 2026-11-19 — Branch `chore/api-hardening` criada de `main` sem mexer no WIP não comitado (switch carrega as mudanças; nada foi descartado).
 - 2026-11-19 — Não subi o docker na Fase 0 (criaria containers/volume e a Fase 0 é só leitura). H11 validada por leitura + `docker compose config`. A execução real é o 1º passo da Fase 1.
 
+- 2026-11-19 — **Baseline = GORM** (decisão do usuário, contra a minha recomendação de `database/sql`). Motivo registrado: o WIP já compila e está "tidy". Consequências: (1) o "pool no boot" da Fase 1 vira um único `*gorm.DB` criado no `main` e injetado, porque o `*gorm.DB` já encapsula o pool de `*sql.DB`; (2) "não encontrado" precisa ser tratado explicitamente (`First` + `gorm.ErrRecordNotFound` no lugar de `Find+Limit(1)`), o que entra na Fase 2 junto com N7; (3) a regra "não introduza ORM" passa a valer como "não introduza OUTRO ORM nem recursos mágicos do GORM (AutoMigrate, hooks, associations) sem decisão".
+
 ## Contrato da API (mudanças)
 _Nenhuma ainda._
 
@@ -84,4 +81,4 @@ _Nenhuma ainda._
 _(nada ainda)_
 
 ## Próximo passo
-Usuário decide GORM vs database/sql e escreve "continuar" → Fase 1.
+Usuário escreve "continuar" → Fase 1, passo 1: subir o stack com compose + `.env.example` coerentes.
