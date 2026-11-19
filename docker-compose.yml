@@ -1,11 +1,18 @@
+# Monorepo inteiro: banco + API (api/) + front (web/).
+#   docker compose up -d --build   (da raiz do repositório)
+# Front: http://localhost:8080 · API: http://localhost:5000
+#
+# Sem .env, valem os padrões de DESENVOLVIMENTO abaixo (os mesmos de
+# api/.env.example). Um .env na raiz sobrescreve qualquer um deles.
+# Não use estes padrões em produção: SECRET_KEY é pública.
 name: devbook
 
 services:
   app:
     container_name: go-api
-    build: .
+    build: ./api
     ports:
-      - "${API_PORT}:${API_PORT}"
+      - "${API_PORT:-5000}:${API_PORT:-5000}"
     depends_on:
       db:
         condition: service_healthy
@@ -14,22 +21,39 @@ services:
       # independente da porta publicada no host (DB_PORT).
       - DB_HOST=db
       - DB_PORT=3306
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
-      - DB_NAME=${DB_NAME}
-      - API_PORT=${API_PORT}
-      - SECRET_KEY=${SECRET_KEY}
-      - CORS_ORIGIN=${CORS_ORIGIN}
+      - DB_USER=${DB_USER:-root}
+      - DB_PASS=${DB_PASS:-devbook_dev}
+      - DB_NAME=${DB_NAME:-devbook}
+      - API_PORT=${API_PORT:-5000}
+      - SECRET_KEY=${SECRET_KEY:-troque-esta-chave-de-desenvolvimento}
+      # Origem do `npm run dev` no host. O container web não precisa de CORS:
+      # ele chama a API pela mesma origem (/api, via proxy do nginx).
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173}
+    restart: always
+
+  web:
+    container_name: devbook-web
+    build:
+      context: ./web
+      args:
+        VITE_API_URL: /api
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      - app
+    environment:
+      # Usado no template do nginx: /api/* -> http://app:<porta>/*
+      - API_UPSTREAM=app:${API_PORT:-5000}
     restart: always
 
   db:
     container_name: mysql-db
     image: mysql:8.0
     ports:
-      - "${DB_PORT}:3306"
+      - "${DB_PORT:-3310}:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASS}
-      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:-devbook_dev}
+      MYSQL_DATABASE: ${DB_NAME:-devbook}
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
       interval: 5s
@@ -38,7 +62,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       # Aplicado só quando o volume está vazio (primeira subida).
-      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./api/sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     restart: always
 
 volumes:
