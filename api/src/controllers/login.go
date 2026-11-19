@@ -50,5 +50,7 @@ func (c *Controllers) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte(token))
+	responses.JSON(w, http.StatusOK, struct {
+		Token string `json:"token"`
+	}{Token: token})
 }
