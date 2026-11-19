@@ -23,6 +23,7 @@ API RESTful desenvolvida em **Go (Golang)** com foco em performance, boas práti
 - [Docker](https://www.docker.com/)
 - [JWT (JSON Web Token)](https://jwt.io/)
 - [Mux Router](https://github.com/gorilla/mux)
+- [Vue 3](https://vuejs.org/) + [Vite](https://vite.dev/) + TypeScript (front em `web/`)
 - [GORM](https://gorm.io/) (acesso a dados; o schema é SQL puro em `api/sql/schema.sql`)
 
 ---
@@ -71,6 +72,32 @@ TEST_DB_DSN='root:devbook_dev@tcp(127.0.0.1:3310)/devbook_test?parseTime=True&lo
 ```
 
 Sem `TEST_DB_DSN`, os testes de integração são pulados.
+
+### Front web (Vue 3)
+
+O front fica em `web/` e roda no host (fora do docker), consumindo a API acima.
+
+**Pré-requisito:** [Node.js](https://nodejs.org/) 20.19+ ou 22.12+ (exigência do Vite 8).
+
+```bash
+# com a API já rodando (passo anterior), a partir da raiz do repositório
+cd web
+npm install
+npm run dev
+```
+
+Abra **[http://localhost:5173](http://localhost:5173)**. Use `localhost`, e não `127.0.0.1`: o CORS da API libera só a origem exata de `CORS_ORIGIN`. A porta é fixa (`strictPort`). Se a 5173 estiver ocupada, o Vite falha em vez de pular para a 5174, que o CORS bloquearia.
+
+| Variável (`web/.env`) | Uso |
+|---|---|
+| `VITE_API_URL` | URL da API (padrão `http://localhost:5000`; ver `web/.env.example`) |
+
+Se mudar a porta ou o host do front, ajuste também `CORS_ORIGIN` na API.
+
+```bash
+npm test        # testes unitários (Vitest)
+npm run build   # checagem de tipos + build de produção em web/dist
+```
 
 ---
 
