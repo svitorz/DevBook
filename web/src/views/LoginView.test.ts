@@ -88,6 +88,6 @@ describe('LoginView', () => {
 
   it('tem link para o cadastro', async () => {
     const { wrapper } = await montar()
-    expect(wrapper.get('a[href="/cadastro"]').exists()).toBe(true)
+    expect(wrapper.find('a[href="/cadastro"]').exists()).toBe(true)
   })
 })
