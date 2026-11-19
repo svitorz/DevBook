@@ -22,7 +22,7 @@ Branch: `feat/web-vue` (criada de `main@5572166`; a fase A inteira foi mergeada 
 - [x] B0 scaffold create-vite 9.3.4 isolado em um commit (`8cec2da`)
 - [x] B0 cliente HTTP, endpoints, tipos, sessão (pinia + localStorage) e 13 testes Vitest (`ad983d0`)
 - [x] B0 prova no navegador: `http://localhost:5173` chamou a API real e recebeu 401 via CORS
-- [ ] B0 apagar os arquivos de demonstração do template (aguarda confirmação do usuário)
+- [x] B0 arquivos de demonstração do template removidos (com confirmação do usuário)
 - [ ] B1 cadastro, login, logout, guarda de rotas
 - [ ] B2 feed
 - [ ] B3 perfil e social
@@ -208,4 +208,4 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 - Paginação em feed/listas, rate limit no login, refresh token: fora do escopo, como combinado.
 
 ## Próximo passo
-Usuário escreve "continuar" → **B1**: telas de cadastro e login, logout, guarda de rotas (deslogado → /entrar) e layout com cabeçalho. Antes, confirmar se os arquivos de demonstração do template podem ser apagados.
+Usuário escreve "continuar" → **B1**: telas de cadastro e login, logout, guarda de rotas (deslogado → /entrar) e layout com cabeçalho.
