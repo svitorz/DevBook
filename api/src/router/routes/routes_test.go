@@ -51,3 +51,24 @@ func TestH1_LoggerRodaEmRotaPublica(t *testing.T) {
 		t.Errorf("Logger não registrou a rota pública; log: %q", buf.String())
 	}
 }
+
+// H6: só cadastro e login são públicos; todo o resto passa pelo Autenticar.
+func TestH6_ApenasCadastroELoginSaoPublicas(t *testing.T) {
+	publicasPermitidas := map[string]bool{
+		"POST /usuarios": true,
+		"POST /login":    true,
+	}
+	c := controllers.New(nil)
+	todas := append(rotasUsuarios(c), rotaLogin(c))
+	todas = append(todas, rotasPublicacoes(c)...)
+
+	for _, rota := range todas {
+		chave := rota.Metodo + " " + rota.URI
+		if !rota.RequerAutenticacao && !publicasPermitidas[chave] {
+			t.Errorf("%s está sem autenticação", chave)
+		}
+		if rota.RequerAutenticacao && publicasPermitidas[chave] {
+			t.Errorf("%s deveria ser pública", chave)
+		}
+	}
+}
