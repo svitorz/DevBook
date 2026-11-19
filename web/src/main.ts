@@ -1,5 +1,24 @@
+import { createPinia } from 'pinia'
 import { createApp } from 'vue'
-import './style.css'
 import App from './App.vue'
+import { configurarCliente } from './api/client'
+import { router } from './router'
+import { useSessaoStore } from './stores/sessao'
+import './style.css'
 
-createApp(App).mount('#app')
+const app = createApp(App)
+app.use(createPinia())
+app.use(router)
+
+// O cliente HTTP lê o token da sessão e, se a API recusar o token
+// (expirado/inválido), encerra a sessão e volta para o início.
+const sessao = useSessaoStore()
+configurarCliente({
+  token: () => sessao.token,
+  aoExpirarSessao: () => {
+    sessao.sair()
+    router.push('/')
+  },
+})
+
+app.mount('#app')
