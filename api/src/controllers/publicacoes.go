@@ -71,7 +71,7 @@ func BuscarPublicacao(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewPostsRepository(db)
 	post, err := repository.FindById(postId)
@@ -96,7 +96,7 @@ func BuscarPublicacoes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 	repository := repository.NewPostsRepository(db)
 	posts, err := repository.Index(userId)
 	if err != nil {
@@ -126,7 +126,7 @@ func AtualizarPublicacao(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewPostsRepository(db)
 	savedPost, err := repository.FindById(postId)
@@ -183,7 +183,7 @@ func DeletarPublicacao(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewPostsRepository(db)
 	savedPost, err := repository.FindById(postId)
@@ -235,7 +235,7 @@ func BuscarPublicacaoDoUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewPostsRepository(db)
 	post, err := repository.FindByUserId(postId)
@@ -268,7 +268,7 @@ func CurtirPublicacao(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 	repository := repository.NewPostsRepository(db)
 
 	savedPost, err := repository.FindById(postId)
@@ -305,7 +305,7 @@ func DescurtirPublicacao(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 	repository := repository.NewPostsRepository(db)
 
 	savedPost, err := repository.FindById(postId)

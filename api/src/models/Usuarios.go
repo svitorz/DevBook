@@ -11,12 +11,16 @@ import (
 )
 
 type Usuario struct {
-	ID       uint64    `json:"id,omitempty"`
-	Nome     string    `json:"nome,omitempty"`
-	Nick     string    `json:"nick,omitempty"`
-	Email    string    `json:"email,omitempty"`
-	Senha    string    `json:"senha,omitempty"`
-	CriadoEm time.Time `json:"criadoem"`
+	ID       uint64    `json:"id,omitempty" gorm:"column:id;primaryKey"`
+	Nome     string    `json:"nome,omitempty" gorm:"column:nome"`
+	Nick     string    `json:"nick,omitempty" gorm:"column:nick"`
+	Email    string    `json:"email,omitempty" gorm:"column:email"`
+	Senha    string    `json:"senha,omitempty" gorm:"column:senha"`
+	CriadoEm time.Time `json:"criadoem" gorm:"column:criadoEm;default:CURRENT_TIMESTAMP"`
+}
+
+func (Usuario) TableName() string {
+	return "USUARIOS"
 }
 
 func (usuario *Usuario) Preparar(action string) error {

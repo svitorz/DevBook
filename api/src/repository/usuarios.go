@@ -2,270 +2,142 @@ package repository
 
 import (
 	"api/src/models"
-	"database/sql"
 	"fmt"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
+const colunasUsuario = "USUARIOS.id, USUARIOS.nome, USUARIOS.nick, USUARIOS.email, USUARIOS.criadoEm"
+
 type usuarios struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func NewUsersRepository(db *sql.DB) *usuarios {
+func NewUsersRepository(db *gorm.DB) *usuarios {
 	return &usuarios{db}
 }
 
 func (u usuarios) Store(usuario models.Usuario) (uint64, error) {
-	statement, err := u.db.Prepare(
-		"insert into USUARIOS (nome, nick, email, senha) values (?,?,?,?)",
-	)
-	if err != nil {
+	if err := u.db.Create(&usuario).Error; err != nil {
 		return 0, err
 	}
 
-	defer statement.Close()
-
-	result, err := statement.Exec(usuario.Nome, usuario.Nick, usuario.Email, usuario.Senha)
-	if err != nil {
-		return 0, err
-	}
-
-	lastInsertID, err := result.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return uint64(lastInsertID), nil
+	return usuario.ID, nil
 }
 
 func (u usuarios) ShowAll(nomeOuNick string) ([]models.Usuario, error) {
 	nomeOuNick = fmt.Sprintf("%%%s%%", nomeOuNick) // %nomeOuNick&%
 
-	rows, err := u.db.Query(
-		"SELECT id, nome, nick, email, criadoEm FROM USUARIOS WHERE nome LIKE ? OR nick LIKE ?",
-		nomeOuNick, nomeOuNick,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
 	var users []models.Usuario
 
-	for rows.Next() {
-		var user models.Usuario
-
-		if err = rows.Scan(
-			&user.ID,
-			&user.Nome,
-			&user.Nick,
-			&user.Email,
-			&user.CriadoEm,
-		); err != nil {
-			return nil, err
-		}
-
-		users = append(users, user)
+	if err := u.db.
+		Select(colunasUsuario).
+		Where("USUARIOS.nome LIKE ? OR USUARIOS.nick LIKE ?", nomeOuNick, nomeOuNick).
+		Find(&users).Error; err != nil {
+		return nil, err
 	}
 
 	return users, nil
 }
 
 func (u usuarios) Show(ID uint64) (models.Usuario, error) {
-	linhas, err := u.db.Query(
-		"SELECT id, nome, nick, email, criadoEm FROM USUARIOS WHERE id = ?",
-		ID,
-	)
-	if err != nil {
-		return models.Usuario{}, nil
-	}
-
-	defer linhas.Close()
-
 	var usuario models.Usuario
 
-	if linhas.Next() {
-		if err = linhas.Scan(
-			&usuario.ID,
-			&usuario.Nome,
-			&usuario.Nick,
-			&usuario.Email,
-			&usuario.CriadoEm,
-		); err != nil {
-			return models.Usuario{}, err
-		}
+	if err := u.db.
+		Select(colunasUsuario).
+		Where("USUARIOS.id = ?", ID).
+		Limit(1).
+		Find(&usuario).Error; err != nil {
+		return models.Usuario{}, err
 	}
 
 	return usuario, nil
 }
 
 func (u usuarios) Update(ID uint64, usuario models.Usuario) error {
-	statement, err := u.db.Prepare("UPDATE USUARIOS SET nome = ?, nick = ?, email = ? where id = ?")
-	if err != nil {
-		return err
-	}
-
-	defer statement.Close()
-
-	if _, err = statement.Exec(usuario.Nome, usuario.Nick, usuario.Email, ID); err != nil {
-		return err
-	}
-
-	return nil
+	return u.db.
+		Model(&models.Usuario{}).
+		Where("id = ?", ID).
+		Select("nome", "nick", "email").
+		Updates(usuario).Error
 }
 
 func (u usuarios) Destroy(ID uint64) error {
-	statement, err := u.db.Prepare("DELETE FROM USUARIOS WHERE id = ?")
-	if err != nil {
-		return err
-	}
-
-	defer statement.Close()
-
-	if _, err = statement.Exec(ID); err != nil {
-		return err
-	}
-
-	return nil
+	return u.db.Delete(&models.Usuario{}, ID).Error
 }
 
 func (u usuarios) FindByEmail(email string) (models.Usuario, error) {
-	row, err := u.db.Query("SELECT id, senha FROM USUARIOS WHERE email = ?", email)
-	if err != nil {
-		return models.Usuario{}, err
-	}
-
-	defer row.Close()
-
 	var usuario models.Usuario
 
-	if row.Next() {
-		if err := row.Scan(&usuario.ID, &usuario.Senha); err != nil {
-			return models.Usuario{}, err
-		}
+	if err := u.db.
+		Select("id", "senha").
+		Where("email = ?", email).
+		Limit(1).
+		Find(&usuario).Error; err != nil {
+		return models.Usuario{}, err
 	}
 
 	return usuario, nil
 }
 
 func (u usuarios) Follow(usuarioID, seguidorId uint64) error {
-	statement, err := u.db.Prepare("INSERT IGNORE INTO SEGUIDORES(usuario_id, seguidor_id) VALUES (?,?)")
-	if err != nil {
-		return err
-	}
-
-	defer statement.Close()
-
-	if _, err = statement.Exec(usuarioID, seguidorId); err != nil {
-		return err
-	}
-
-	return nil
+	return u.db.
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(&models.Seguidor{UsuarioID: usuarioID, SeguidorID: seguidorId}).Error
 }
 
 func (u usuarios) Unfollow(usuarioID, seguidorId uint64) error {
-	statement, err := u.db.Prepare("DELETE FROM SEGUIDORES WHERE usuario_id = ? AND seguidor_id = ?")
-	if err != nil {
-		return err
-	}
-
-	defer statement.Close()
-
-	if _, err = statement.Exec(usuarioID, seguidorId); err != nil {
-		return err
-	}
-
-	return nil
+	return u.db.
+		Where("usuario_id = ? AND seguidor_id = ?", usuarioID, seguidorId).
+		Delete(&models.Seguidor{}).Error
 }
 
 func (u usuarios) GetFollowers(usuarioId uint64) ([]models.Usuario, error) {
-	rows, err := u.db.Query(
-		"SELECT u.id, u.nome, u.nick, u.email, u.criadoEm FROM USUARIOS u INNER JOIN SEGUIDORES s ON s.seguidor_id = u.id WHERE s.usuario_id = ?",
-		usuarioId)
-	if err != nil {
+	var users []models.Usuario
+
+	if err := u.db.
+		Select(colunasUsuario).
+		Joins("INNER JOIN SEGUIDORES s ON s.seguidor_id = USUARIOS.id").
+		Where("s.usuario_id = ?", usuarioId).
+		Find(&users).Error; err != nil {
 		return nil, err
 	}
 
-	defer rows.Close()
-
-	var usuarios []models.Usuario
-	for rows.Next() {
-		var usuario models.Usuario
-
-		if err = rows.Scan(
-			&usuario.ID,
-			&usuario.Nome,
-			&usuario.Nick,
-			&usuario.Email,
-			&usuario.CriadoEm,
-		); err != nil {
-			return nil, err
-		}
-		usuarios = append(usuarios, usuario)
-	}
-
-	return usuarios, nil
+	return users, nil
 }
 
 func (u usuarios) GetFollowing(usuarioId uint64) ([]models.Usuario, error) {
-	rows, err := u.db.Query(
-		"SELECT u.id, u.nome, u.nick, u.email, u.criadoEm FROM USUARIOS u INNER JOIN SEGUIDORES s ON s.seguidor_id = u.id WHERE s.seguidor_id = ?",
-		usuarioId)
-	if err != nil {
+	var users []models.Usuario
+
+	if err := u.db.
+		Select(colunasUsuario).
+		Joins("INNER JOIN SEGUIDORES s ON s.seguidor_id = USUARIOS.id").
+		Where("s.seguidor_id = ?", usuarioId).
+		Find(&users).Error; err != nil {
 		return nil, err
 	}
 
-	defer rows.Close()
-
-	var usuarios []models.Usuario
-	for rows.Next() {
-		var usuario models.Usuario
-
-		if err = rows.Scan(
-			&usuario.ID,
-			&usuario.Nome,
-			&usuario.Nick,
-			&usuario.Email,
-			&usuario.CriadoEm,
-		); err != nil {
-			return nil, err
-		}
-		usuarios = append(usuarios, usuario)
-	}
-
-	return usuarios, nil
+	return users, nil
 }
 
 func (u usuarios) GetPassword(userId uint64) (string, error) {
-	row, err := u.db.Query("SELECT SENHA FROM USUARIOS WHERE id = ?", userId)
-	if err != nil {
+	var usuario models.Usuario
+
+	if err := u.db.
+		Select("senha").
+		Where("id = ?", userId).
+		Limit(1).
+		Find(&usuario).Error; err != nil {
 		return "", err
 	}
 
-	defer row.Close()
-
-	var user models.Usuario
-
-	if row.Next() {
-		if err = row.Scan(&user.Senha); err != nil {
-			return "", err
-		}
-	}
-
-	return user.Senha, nil
+	return usuario.Senha, nil
 }
 
 func (u usuarios) UpdatePassword(userId uint64, novaSenha string) error {
-	statement, err := u.db.Prepare("UPDATE USUARIOS SET senha = ? WHERE id = ?")
-	if err != nil {
-		return err
-	}
-
-	defer statement.Close()
-
-	if _, err = statement.Exec(novaSenha, userId); err != nil {
-		return err
-	}
-
-	return nil
+	return u.db.
+		Model(&models.Usuario{}).
+		Where("id = ?", userId).
+		Update("senha", novaSenha).Error
 }

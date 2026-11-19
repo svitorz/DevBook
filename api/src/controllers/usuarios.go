@@ -40,7 +40,7 @@ func CriarUsuario(w http.ResponseWriter, r *http.Request) {
 		responses.Err(w, http.StatusInternalServerError, err)
 		return
 	}
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewUsersRepository(db)
 	usuario.ID, err = repository.Store(usuario)
@@ -60,7 +60,7 @@ func BuscarUsuarios(w http.ResponseWriter, r *http.Request) {
 		responses.Err(w, http.StatusInternalServerError, err)
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	rep := repository.NewUsersRepository(db)
 	users, err := rep.ShowAll(nomeOuNick)
@@ -87,7 +87,7 @@ func BuscarUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewUsersRepository(db)
 	user, err := repository.Show(userID)
@@ -143,7 +143,7 @@ func AtualizarUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewUsersRepository(db)
 	if err = repository.Update(userID, user); err != nil {
@@ -178,7 +178,7 @@ func DeletarUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewUsersRepository(db)
 	if err = repository.Destroy(userID); err != nil {
@@ -213,7 +213,7 @@ func SeguirUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewUsersRepository(db)
 
@@ -249,7 +249,7 @@ func PararDeSeguirUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewUsersRepository(db)
 	if err = repository.Unfollow(usuarioId, seguidorID); err != nil {
@@ -274,7 +274,7 @@ func BuscarSeguidores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewUsersRepository(db)
 	seguidores, err := repository.GetFollowers(usuarioId)
@@ -300,7 +300,7 @@ func BuscarSeguindo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewUsersRepository(db)
 	seguidores, err := repository.GetFollowing(usuarioId)
@@ -349,7 +349,7 @@ func AtualizarSenha(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	defer database.Desconectar(db)
 
 	repository := repository.NewUsersRepository(db)
 	senhaAntiga, err := repository.GetPassword(userID)
