@@ -16,6 +16,8 @@ export interface Publicacao {
   autor_id: number
   autor_nick?: string
   curtidas: number
+  /** Se o usuário do token curtiu (adicionado na B2). */
+  curtiu: boolean
   criadaEm: string
 }
 
