@@ -5,16 +5,18 @@ Front em Vue 3 + TypeScript (Vite), vue-router e pinia. Consome a API em `../api
 ## Rodar
 
 ```bash
-# 1. API (em ../api)
-docker compose --env-file .env.example up -d --build
+# Tudo em container (da raiz do repositório): front em http://localhost:8080
+docker compose up -d --build
 
-# 2. Front
+# Desenvolvimento com hot reload (aqui em web/, com a API do compose rodando)
 npm install
 npm run dev        # http://localhost:5173 (porta fixa: é a origem liberada no CORS da API)
 ```
 
 Abra **http://localhost:5173**, e não 127.0.0.1: o CORS compara a origem exata.
 A URL da API vem de `VITE_API_URL` (padrão `http://localhost:5000`; ver `.env.example`).
+
+No container (`Dockerfile`), o build usa `VITE_API_URL=/api` e o nginx encaminha `/api/*` para a API (`nginx/default.conf.template`), na mesma origem e sem CORS. Rotas do vue-router recarregadas com F5 caem no `index.html`.
 
 ## Scripts
 

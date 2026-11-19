@@ -29,13 +29,15 @@ Branch: `feat/web-vue` (criada de `main@5572166`; a fase A inteira foi mergeada 
 - [x] B1 layout com cabeçalho e Sair (`97c3edc`)
 - [x] B1 39 testes Vitest + build passando
 - [x] B1 prova no navegador contra a API real: deslogado em `/` vai para `/entrar?redirect=/`; cadastro com senha fraca mostra o 400 da API; cadastro válido entra direto no feed; F5 mantém a sessão; Sair limpa o storage e vai para `/entrar`; nick duplicado mostra o 409; senha errada mostra o 401; login correto respeita `?redirect=/?de=link`
+- [x] Extra pedido pelo usuário antes da B2: compose na raiz builda e sobe db + API + web juntos (`a1d36fc`, `4331dd0`, `ac1dbbf`). Prova: `docker compose build` construiu `devbook-app` e `devbook-web`; `down` (sem `-v`) + `up -d` puro subiu os três; o usuário de teste da B1 (id 31) continuou no banco; `:8080/` → 200, F5 em `/entrar` → index.html, `/api/publicacoes` sem token → 401 da API, bundle sem `localhost:5000`; login no navegador em `:8080` fez `POST /api/login` → 200, e a sessão sobrevive ao F5; fumaça 66/0
 - [ ] B1 sessão expirada (401 com token): coberta só por teste unitário. A tela inicial ainda não chama a API; a prova real fica para a B2, quando o feed fizer requisições
 - [ ] B2 feed
 - [ ] B3 perfil e social
 - [ ] B4 minha conta
 
 ### Como rodar o front
-`cd web && npm install && npm run dev`. Abrir **http://localhost:5173** (não 127.0.0.1: o CORS compara a origem exata). Testes: `npm test`. Tipos + build: `npm run build`.
+**Tudo em container:** `docker compose up -d --build` da raiz sobe banco, API e web. Front em **http://localhost:8080** (nginx; `/api` encaminhado para a API, mesma origem).
+**Dev com hot reload:** `cd web && npm install && npm run dev`. Abrir **http://localhost:5173** (não 127.0.0.1: o CORS compara a origem exata). Testes: `npm test`. Tipos + build: `npm run build`.
 
 ### Fase A — correções da API (concluída)
 
@@ -46,8 +48,8 @@ Branch: `feat/web-vue` (criada de `main@5572166`; a fase A inteira foi mergeada 
 
 ### Como rodar os testes
 ```bash
+docker compose up -d db        # da raiz (o compose saiu de api/ em ac1dbbf)
 cd api
-docker compose --env-file .env.example up -d db
 TEST_DB_DSN='root:devbook_dev@tcp(127.0.0.1:3310)/devbook_test?parseTime=True&loc=Local' go test ./...
 ```
 Sem `TEST_DB_DSN`, só rodam os testes que não usam banco. O helper recusa qualquer banco cujo nome não contenha `test`, porque ele apaga os dados entre um teste e outro.
@@ -173,6 +175,8 @@ Não cobertos pela fumaça (provar com teste Go na fase 2): H1 (registro duplica
 - 2026-11-19 — **Efeitos colaterais da refatoração** (inevitáveis, porque o código removido era o próprio bug): (1) em `BuscarUsuarios`, o nil-deref quando `Conectar` falhava (parte do H4) deixou de existir; (2) o vazamento de pool no `CriarPublicacao` (parte do H2) deixou de existir. Nenhum dos dois era observável pela fumaça. O primeiro só acontecia com o banco fora do ar; a prova do segundo é a contagem de conexões acima. Agora uma falha de banco no boot dá `log.Fatal` com a mensagem, e não durante uma requisição.
 - 2026-11-19 — **Fase B0, decisões técnicas**: (1) cliente próprio sobre `fetch` (~60 linhas) em vez de axios: ele cobre JSON, token, `ApiError` e 204 sem dependência; (2) um 401 *com token enviado* encerra a sessão (token expirado), mas um 401 sem token (login errado) não, senão o login com senha errada "deslogaria"; (3) `configurarCliente` injeta o token e o callback no `main.ts`, para o cliente não importar a store (evita dependência circular e facilita teste); (4) Vite com `strictPort: 5173`, porque se a porta estiver ocupada ele pularia para 5174 e o CORS bloquearia em silêncio; (5) sem alias `@/`: imports relativos bastam no tamanho atual.
 - 2026-11-19 — **Fase B1, decisões técnicas**: (1) guarda única por `meta.soVisitante`: o padrão é exigir sessão, então rota nova nasce protegida (o erro "esqueci de proteger" vira o erro inofensivo "esqueci de liberar"); (2) `?redirect=` só aceita caminho interno: `//host` e `/\host` seriam open redirect; (3) `aoExpirarSessao` navega por nome para `/entrar`, porque o `push('/')` da B0 era navegação duplicada quando o usuário já estava em `/`: a guarda não rodava e a tela ficava aberta sem sessão; (4) as regras de senha **não** são repetidas no front: a API é a fonte da verdade e a tela mostra a mensagem dela. Descartado: validar em JS também, que daria feedback antes do envio, mas duplicaria a regra em dois lugares; (5) cadastro faz login automático. Se só o login falhar, vai para `/entrar?conta=criada`, porque reenviar daria 409; (6) logout é só local, porque o JWT é stateless e a API não tem revogação. Um token copiado vale até expirar (6h). Ver Ideias futuras; (7) `/entrar` e `/cadastro` são lazy (code splitting por rota, nativo do Vite).
+- 2026-11-19 — **Compose único (pedido do usuário; opções escolhidas por ele)**: (1) `docker-compose.yml` na raiz, com contextos `./api` e `./web`. O `name: devbook` foi mantido, então o volume `devbook_mysql_data` é o mesmo; (2) web = build de produção (node:24-slim → nginx:alpine) em `:8080`, com `/api` encaminhado pelo nginx para `app:API_PORT`. Mesma origem: o container não depende de CORS, a API não mudou e o `npm run dev` na 5173 continua funcionando em paralelo. Descartados: nginx na 5173 (colidiria com o `npm run dev`) e Vite dev no container (não é build; HMR com bind mount é instável); (3) `${VAR:-padrão}` com os valores de dev, para o `up -d` funcionar sem `.env`. Trade-off aceito: a `SECRET_KEY` padrão é pública. Não criei um `.env.example` na raiz (duplicaria o `api/.env.example`); o README lista padrões e variáveis; (4) node **slim**, não alpine: o lock foi gerado em glibc; (5) o lock precisou de `@emnapi/*`, porque o npm 11.19 da imagem recusou o `npm ci` com o lock do npm 11.6 do host. Regenerei só o lock, com `--package-lock-only`, sem mudar versão. Descartado: `npm install` no Dockerfile, que tornaria o build não reprodutível.
+- 2026-11-19 — **Erro de processo (compose)**: o `git mv` deixou a renomeação preparada, e ela entrou no commit da imagem web (`4331dd0`) ainda com o conteúdo antigo (`build: .`). Nesse commit isolado, o compose da raiz não builda; o `ac1dbbf` conserta. Não reescrevi o histórico (pede confirmação; os commits são só locais).
 - 2026-11-19 — **Erro de processo (B1)**: o `b0a8d0d` foi comitado com o `vue-tsc` falhando, porque o `grep` no fim do encadeamento mascarou o código de saída (mesma classe do erro do H6). A correção veio em `1abcf57`. Desde então o front só é comitado depois de um script que roda testes e build e devolve o código de saída real.
 - 2026-11-19 — **Fase 2, decisões técnicas**: (1) "não encontrado" via `Take` + `gorm.ErrRecordNotFound`, traduzido em `responderErroDeBusca`; (2) 409/404 de escrita via `gorm.Config{TranslateError: true}` (`ErrDuplicatedKey`/`ErrForeignKeyViolated`), em vez de olhar o número do erro MySQL (seria acoplar ao driver); (3) curtir idempotente com `OnConflict{DoNothing}`, o mesmo padrão do Follow; (4) CORS escrito à mão (~20 linhas) em vez de `rs/cors`, sem lib nova; envolve o router inteiro porque o mux dá 405 ao OPTIONS; (5) N1 resolvido limpando `Senha` antes da resposta (DTO ficou em Ideias futuras); (6) H13 removeu a rota singular em vez de manter alias, porque ainda não há cliente.
 - 2026-11-19 — **Erro de processo (H6)**: o commit `14e6b16` saiu só com o teste, porque o `&&` checava o `grep` e não o `go test`. Não reescrevi o histórico (pede confirmação); a correção veio em `4266df2`. Desde então os commits só rodam se o `go test` sair com 0.
@@ -207,6 +211,8 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 - Chave JSON inconsistente: `criadoem` (usuário) vs `criadaEm` (publicação).
 - README cita GORM "opcional" e `docker-compose` (v1).
 - Mensagens de validação da API com erros de digitação: `" e-mail inserido é inválido"` (espaço no início) e `"o senha é obrigatório"` (gênero). O front mostra essas mensagens como vêm.
+- `GET` autenticado sem header `Authorization` responde 401 `"token is malformed: token contains an invalid number of segments"`; um "token ausente" seria mais claro (visto ao testar o proxy).
+- A imagem da API usa `golang:1.24` inteira como runtime (~1 GB); um multi-stage com imagem mínima reduziria muito o tamanho.
 - A introdução do README da raiz ainda descreve o projeto só como "API RESTful".
 
 ## Ideias futuras
