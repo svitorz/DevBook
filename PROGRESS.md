@@ -3,8 +3,21 @@
 > Memória do projeto. Ler ANTES de qualquer coisa ao iniciar sessão ou após compactação.
 
 ## Fase atual
-**Fase 1 — rede de segurança (concluída, aguardando "continuar")**
-Branch: `chore/api-hardening` (criada a partir de `main@fedaf99`).
+**Fase 2 — correções da API (em andamento)**
+Branch: `chore/api-hardening` (fases 0–1 mergeadas no `main` via PR #1, `dbb1e25`; branch avançada em fast-forward).
+
+### Decisões da Fase 2 (confirmadas pelo usuário em 2026-11-19)
+1. **Contrato:** todos os itens `[contrato]` da fumaça foram aprovados como estão: 409 para duplicado; login devolve `{"token"}`; 400 para validação; curtir 2x é idempotente (204); senha atual errada dá 401; CORS liberado para `http://localhost:5173`.
+2. **Testes Go:** integração com `httptest` contra o banco `devbook_test` no MySQL do compose. Os testes pulam quando `TEST_DB_DSN` não está definido.
+3. **Schema:** `api/sql/schema.sql` aplicado via `docker-entrypoint-initdb.d`; a app não roda DDL.
+
+### Como rodar os testes
+```bash
+cd api
+docker compose --env-file .env.example up -d db
+TEST_DB_DSN='root:devbook_dev@tcp(127.0.0.1:3310)/devbook_test?parseTime=True&loc=Local' go test ./...
+```
+Sem `TEST_DB_DSN`, só rodam os testes que não usam banco. O helper recusa qualquer banco cujo nome não contenha `test`, porque ele apaga os dados entre um teste e outro.
 
 ## Baseline
 **GORM** (decisão do usuário, 2026-11-19). O WIP de migração foi comitado como baseline em `a10bf17`.

@@ -12,7 +12,23 @@ import (
 // Conectar abre o pool de conexões e prepara o schema. Deve ser chamada
 // UMA vez no boot; o *gorm.DB retornado é seguro para uso concorrente.
 func Conectar() (*gorm.DB, error) {
-	db, err := gorm.Open(mysql.Open(config.StringConexaoBanco), &gorm.Config{})
+	db, err := Abrir(config.StringConexaoBanco)
+	if err != nil {
+		return nil, err
+	}
+	if err := CriarBancoSeNecessario(db); err != nil {
+		return nil, err
+	}
+
+	if err := CriarTabelas(db); err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+// Abrir abre o pool para o DSN informado e confere a conexão (usado também pelos testes).
+func Abrir(dsn string) (*gorm.DB, error) {
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -22,13 +38,6 @@ func Conectar() (*gorm.DB, error) {
 		return nil, err
 	}
 	if err = sqlDB.Ping(); err != nil {
-		return nil, err
-	}
-	if err := CriarBancoSeNecessario(db); err != nil {
-		return nil, err
-	}
-
-	if err := CriarTabelas(db); err != nil {
 		return nil, err
 	}
 	return db, nil
