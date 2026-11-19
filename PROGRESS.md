@@ -3,7 +3,7 @@
 > Memória do projeto. Ler ANTES de qualquer coisa ao iniciar sessão ou após compactação.
 
 ## Fase atual
-**Fase B0 — fundação do front (em andamento)**
+**Fase B0 — fundação do front (concluída, aguardando "continuar")**
 Branch: `feat/web-vue` (criada de `main@5572166`; a fase A inteira foi mergeada via PR #1 e PR #2).
 
 ### Decisões da Fase B (confirmadas pelo usuário em 2026-11-19)
@@ -16,6 +16,20 @@ Branch: `feat/web-vue` (criada de `main@5572166`; a fase A inteira foi mergeada 
    - B2: feed (criar, editar e excluir post; curtir)
    - B3: perfil e social (posts do usuário, seguir/parar, seguidores/seguindo, busca)
    - B4: minha conta (editar perfil, trocar senha, excluir conta)
+
+### Checklist Fase B
+- [x] B0 `id` no login da API (`98b56c1`): teste falhava e agora passa; fumaça 66/0
+- [x] B0 scaffold create-vite 9.3.4 isolado em um commit (`8cec2da`)
+- [x] B0 cliente HTTP, endpoints, tipos, sessão (pinia + localStorage) e 13 testes Vitest (`ad983d0`)
+- [x] B0 prova no navegador: `http://localhost:5173` chamou a API real e recebeu 401 via CORS
+- [ ] B0 apagar os arquivos de demonstração do template (aguarda confirmação do usuário)
+- [ ] B1 cadastro, login, logout, guarda de rotas
+- [ ] B2 feed
+- [ ] B3 perfil e social
+- [ ] B4 minha conta
+
+### Como rodar o front
+`cd web && npm install && npm run dev`. Abrir **http://localhost:5173** (não 127.0.0.1: o CORS compara a origem exata). Testes: `npm test`. Tipos + build: `npm run build`.
 
 ### Fase A — correções da API (concluída)
 
@@ -151,6 +165,7 @@ Não cobertos pela fumaça (provar com teste Go na fase 2): H1 (registro duplica
 - 2026-11-19 — **Infra (Fase 1)**: compose com `name: devbook`, porque o nome padrão `api` colide com containers `api-*` de outro projeto na máquina. Banco publicado em 3310, já que 3306 e 3307 estão ocupados no host. Dentro da rede a API usa `db:3306` fixo. A API escuta na mesma `API_PORT` dentro e fora. Healthcheck no MySQL, para a API só subir com o banco pronto (necessário agora que ela conecta no boot). Removi o volume `.:/app`, que esconderia o binário. A falta de `.env` virou aviso em vez de `log.Fatal`. Descartado: manter o `.env` dentro da imagem, porque vaza segredo e não é assim que o compose injeta variáveis.
 - 2026-11-19 — **Pool por injeção, não global**. Os handlers viraram métodos de `controllers.Controllers{db}`, e as rotas viraram funções `rotasX(c)`. Alternativa descartada: `var DB *gorm.DB` global no pacote `database`. Seria um diff menor (só troca o `Conectar()` por `database.DB`), mas cria estado global: os testes não conseguem trocar o banco sem mutar um global compartilhado, o que impede `t.Parallel()`, e a dependência fica escondida. Custo da escolha: assinatura nova em todos os handlers e um diff mecânico maior. Não configurei `SetMaxOpenConns` e afins: os defaults bastam para um projeto de estudo.
 - 2026-11-19 — **Efeitos colaterais da refatoração** (inevitáveis, porque o código removido era o próprio bug): (1) em `BuscarUsuarios`, o nil-deref quando `Conectar` falhava (parte do H4) deixou de existir; (2) o vazamento de pool no `CriarPublicacao` (parte do H2) deixou de existir. Nenhum dos dois era observável pela fumaça. O primeiro só acontecia com o banco fora do ar; a prova do segundo é a contagem de conexões acima. Agora uma falha de banco no boot dá `log.Fatal` com a mensagem, e não durante uma requisição.
+- 2026-11-19 — **Fase B0, decisões técnicas**: (1) cliente próprio sobre `fetch` (~60 linhas) em vez de axios: ele cobre JSON, token, `ApiError` e 204 sem dependência; (2) um 401 *com token enviado* encerra a sessão (token expirado), mas um 401 sem token (login errado) não, senão o login com senha errada "deslogaria"; (3) `configurarCliente` injeta o token e o callback no `main.ts`, para o cliente não importar a store (evita dependência circular e facilita teste); (4) Vite com `strictPort: 5173`, porque se a porta estiver ocupada ele pularia para 5174 e o CORS bloquearia em silêncio; (5) sem alias `@/`: imports relativos bastam no tamanho atual.
 - 2026-11-19 — **Fase 2, decisões técnicas**: (1) "não encontrado" via `Take` + `gorm.ErrRecordNotFound`, traduzido em `responderErroDeBusca`; (2) 409/404 de escrita via `gorm.Config{TranslateError: true}` (`ErrDuplicatedKey`/`ErrForeignKeyViolated`), em vez de olhar o número do erro MySQL (seria acoplar ao driver); (3) curtir idempotente com `OnConflict{DoNothing}`, o mesmo padrão do Follow; (4) CORS escrito à mão (~20 linhas) em vez de `rs/cors`, sem lib nova; envolve o router inteiro porque o mux dá 405 ao OPTIONS; (5) N1 resolvido limpando `Senha` antes da resposta (DTO ficou em Ideias futuras); (6) H13 removeu a rota singular em vez de manter alias, porque ainda não há cliente.
 - 2026-11-19 — **Erro de processo (H6)**: o commit `14e6b16` saiu só com o teste, porque o `&&` checava o `grep` e não o `go test`. Não reescrevi o histórico (pede confirmação); a correção veio em `4266df2`. Desde então os commits só rodam se o `go test` sair com 0.
 - 2026-11-19 — Script de fumaça: o esperado de cada item é o contrato-alvo, e cada item isola um bug. Na primeira versão do script, o H2 contaminava os testes de ownership e eu tinha errado a direção do follow. Corrigi antes de registrar o baseline.
@@ -185,7 +200,6 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 - README cita GORM "opcional" e `docker-compose` (v1).
 
 ## Ideias futuras
-- **Login devolver também o `id`** (`{"id", "token"}`). O front precisa saber quem está logado; hoje teria que decodificar o payload do JWT. Muda o contrato: decidir no início da fase B.
 - **DTOs de entrada/saída** em vez de reaproveitar `models.Usuario` (o N1 foi resolvido limpando o campo; `json:"-"` com DTO seria seguro por padrão).
 - `atualizar-senha` validar a força da senha nova com `validarSenha` (hoje aceita qualquer coisa).
 - Login: comparar com um hash fictício quando o e-mail não existe, para o tempo de resposta não denunciar a existência do e-mail (timing).
@@ -194,4 +208,4 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 - Paginação em feed/listas, rate limit no login, refresh token: fora do escopo, como combinado.
 
 ## Próximo passo
-Usuário revisa/mergeia a fase 2 e escreve "continuar" → **Fase B (front Vue 3 em `web/`, branch `feat/web-vue`)**. Antes de codar, decidir com o usuário: stack do front (Vite + Vue 3 + TS? router/pinia? CSS), onde guardar o token, e a ideia "login devolve id".
+Usuário escreve "continuar" → **B1**: telas de cadastro e login, logout, guarda de rotas (deslogado → /entrar) e layout com cabeçalho. Antes, confirmar se os arquivos de demonstração do template podem ser apagados.
