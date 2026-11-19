@@ -17,33 +17,33 @@ import (
 func (c *Controllers) CriarPublicacao(w http.ResponseWriter, r *http.Request) {
 	userId, err := auth.GetUserID(r)
 	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
+		responses.Err(w, http.StatusUnauthorized, err)
 		return
 	}
 
 	request, err := io.ReadAll(r.Body)
 	if err != nil {
-		responses.Err(w, http.StatusUnprocessableEntity, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 
 	var publicacao models.Publicacao
 	if err = json.Unmarshal(request, &publicacao); err != nil {
-		responses.Err(w, http.StatusForbidden, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 	// Depois do Unmarshal: o autor vem do token, nunca do corpo.
 	publicacao.AutorID = userId
 
 	if err := publicacao.Preparar(); err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 
 	newPostRespository := repository.NewPostsRepository(c.db)
 	publicacao.ID, err = newPostRespository.Store(publicacao)
 	if err != nil {
-		responses.Err(w, http.StatusBadRequest, err)
+		responderErroDeEscrita(w, err)
 		return
 	}
 
@@ -55,7 +55,7 @@ func (c *Controllers) BuscarPublicacao(w http.ResponseWriter, r *http.Request) {
 
 	postId, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
 	if err != nil {
-		responses.Err(w, http.StatusNoContent, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 	repository := repository.NewPostsRepository(c.db)
@@ -88,7 +88,7 @@ func (c *Controllers) BuscarPublicacoes(w http.ResponseWriter, r *http.Request) 
 func (c *Controllers) AtualizarPublicacao(w http.ResponseWriter, r *http.Request) {
 	userId, err := auth.GetUserID(r)
 	if err != nil {
-		responses.Err(w, http.StatusForbidden, err)
+		responses.Err(w, http.StatusUnauthorized, err)
 		return
 	}
 
@@ -124,7 +124,7 @@ func (c *Controllers) AtualizarPublicacao(w http.ResponseWriter, r *http.Request
 	}
 
 	if err = post.Preparar(); err != nil {
-		responses.Err(w, http.StatusUnauthorized, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -139,7 +139,7 @@ func (c *Controllers) AtualizarPublicacao(w http.ResponseWriter, r *http.Request
 func (c *Controllers) DeletarPublicacao(w http.ResponseWriter, r *http.Request) {
 	userId, err := auth.GetUserID(r)
 	if err != nil {
-		responses.Err(w, http.StatusForbidden, err)
+		responses.Err(w, http.StatusUnauthorized, err)
 		return
 	}
 
@@ -199,7 +199,7 @@ func (c *Controllers) CurtirPublicacao(w http.ResponseWriter, r *http.Request) {
 
 	postId, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
 	if err != nil {
-		responses.Err(w, http.StatusNoContent, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -230,7 +230,7 @@ func (c *Controllers) DescurtirPublicacao(w http.ResponseWriter, r *http.Request
 
 	postId, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
 	if err != nil {
-		responses.Err(w, http.StatusNoContent, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 

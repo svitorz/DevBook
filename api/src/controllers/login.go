@@ -17,7 +17,7 @@ var errCredenciaisInvalidas = errors.New("e-mail ou senha inválidos")
 func (c *Controllers) Login(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		responses.Err(w, http.StatusUnprocessableEntity, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 

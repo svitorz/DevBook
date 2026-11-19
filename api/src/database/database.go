@@ -16,7 +16,9 @@ func Conectar() (*gorm.DB, error) {
 
 // Abrir abre o pool para o DSN informado e confere a conexão (usado também pelos testes).
 func Abrir(dsn string) (*gorm.DB, error) {
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	// TranslateError: duplicidade vira gorm.ErrDuplicatedKey e FK inválida
+	// vira gorm.ErrForeignKeyViolated, sem acoplar os controllers ao driver.
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{TranslateError: true})
 	if err != nil {
 		return nil, err
 	}
