@@ -18,8 +18,9 @@ var (
 func Carregar() {
 	var err error
 
+	// No container as variáveis vêm do compose e não existe .env; só avisa.
 	if err = godotenv.Load(); err != nil {
-		log.Fatal(err)
+		log.Println("aviso: .env não carregado, usando variáveis do ambiente:", err)
 	}
 
 	Port, err = strconv.Atoi(os.Getenv("API_PORT"))
