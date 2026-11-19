@@ -7,10 +7,12 @@ import (
 	"api/src/responses"
 	"api/src/security"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"net/http"
 )
+
+var errCredenciaisInvalidas = errors.New("e-mail ou senha inválidos")
 
 func (c *Controllers) Login(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
@@ -34,9 +36,11 @@ func (c *Controllers) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Mesma resposta para e-mail inexistente e senha errada: não revela
+	// quais e-mails estão cadastrados. (FindByEmail devolve usuário zerado
+	// quando não encontra, e o bcrypt falha contra hash vazio.)
 	if err = security.CheckPassword(usuario.Senha, usuarioSalvoNoBanco.Senha); err != nil {
-		responses.Err(w, http.StatusUnauthorized, err)
-		fmt.Println(err)
+		responses.Err(w, http.StatusUnauthorized, errCredenciaisInvalidas)
 		return
 	}
 
