@@ -3,7 +3,7 @@
 > Memória do projeto. Ler ANTES de qualquer coisa ao iniciar sessão ou após compactação.
 
 ## Fase atual
-**Fase B1 — cadastro, login, logout e guarda de rotas (concluída, aguardando "continuar")**
+**Fase B2 — feed (concluída, aguardando "continuar")**
 Branch: `feat/web-vue` (criada de `main@5572166`; a fase A inteira foi mergeada via PR #1 e PR #2).
 
 ### Decisões da Fase B (confirmadas pelo usuário em 2026-11-19)
@@ -30,8 +30,13 @@ Branch: `feat/web-vue` (criada de `main@5572166`; a fase A inteira foi mergeada 
 - [x] B1 39 testes Vitest + build passando
 - [x] B1 prova no navegador contra a API real: deslogado em `/` vai para `/entrar?redirect=/`; cadastro com senha fraca mostra o 400 da API; cadastro válido entra direto no feed; F5 mantém a sessão; Sair limpa o storage e vai para `/entrar`; nick duplicado mostra o 409; senha errada mostra o 401; login correto respeita `?redirect=/?de=link`
 - [x] Extra pedido pelo usuário antes da B2: compose na raiz builda e sobe db + API + web juntos (`a1d36fc`, `4331dd0`, `ac1dbbf`). Prova: `docker compose build` construiu `devbook-app` e `devbook-web`; `down` (sem `-v`) + `up -d` puro subiu os três; o usuário de teste da B1 (id 31) continuou no banco; `:8080/` → 200, F5 em `/entrar` → index.html, `/api/publicacoes` sem token → 401 da API, bundle sem `localhost:5000`; login no navegador em `:8080` fez `POST /api/login` → 200, e a sessão sobrevive ao F5; fumaça 66/0
-- [ ] B1 sessão expirada (401 com token): coberta só por teste unitário. A tela inicial ainda não chama a API; a prova real fica para a B2, quando o feed fizer requisições
-- [ ] B2 feed
+- [x] B1 sessão expirada (401 com token): provada no navegador na B2. Com o token adulterado no storage, o F5 no feed recebeu 401, a sessão foi limpa e a tela foi para `/entrar?redirect=/`
+- [x] B2 API: campo `curtiu` (decisão do usuário) com `TestB2_CurtiuIndicaSeOUsuarioDoTokenCurtiu` (falhava e agora passa); de quebra, sai o N+1 das curtidas (`791ceeb`); suíte Go ok; fumaça 66/0
+- [x] B2 composable `useListaDePublicacoes` (`403f3dc`)
+- [x] B2 formulário de publicação para criar e editar (`ddada28`)
+- [x] B2 feed: cartão com curtir (toggle), editar e excluir; estados carregando, vazio e erro (`e200eff`)
+- [x] B2 62 testes Vitest + build passando; container web rebuildado
+- [x] B2 prova no navegador contra a API real: feed mostra o post de quem segue; curtir sobrevive ao F5 (♥ 1, `aria-pressed=true`); publicar coloca o post no topo com nick e data reais e limpa o formulário; só o post próprio tem Editar/Excluir; a edição persiste após o F5; excluir pede confirmação e remove; descurtir volta a ♡ 0 após o F5
 - [ ] B3 perfil e social
 - [ ] B4 minha conta
 
@@ -175,6 +180,7 @@ Não cobertos pela fumaça (provar com teste Go na fase 2): H1 (registro duplica
 - 2026-11-19 — **Efeitos colaterais da refatoração** (inevitáveis, porque o código removido era o próprio bug): (1) em `BuscarUsuarios`, o nil-deref quando `Conectar` falhava (parte do H4) deixou de existir; (2) o vazamento de pool no `CriarPublicacao` (parte do H2) deixou de existir. Nenhum dos dois era observável pela fumaça. O primeiro só acontecia com o banco fora do ar; a prova do segundo é a contagem de conexões acima. Agora uma falha de banco no boot dá `log.Fatal` com a mensagem, e não durante uma requisição.
 - 2026-11-19 — **Fase B0, decisões técnicas**: (1) cliente próprio sobre `fetch` (~60 linhas) em vez de axios: ele cobre JSON, token, `ApiError` e 204 sem dependência; (2) um 401 *com token enviado* encerra a sessão (token expirado), mas um 401 sem token (login errado) não, senão o login com senha errada "deslogaria"; (3) `configurarCliente` injeta o token e o callback no `main.ts`, para o cliente não importar a store (evita dependência circular e facilita teste); (4) Vite com `strictPort: 5173`, porque se a porta estiver ocupada ele pularia para 5174 e o CORS bloquearia em silêncio; (5) sem alias `@/`: imports relativos bastam no tamanho atual.
 - 2026-11-19 — **Fase B1, decisões técnicas**: (1) guarda única por `meta.soVisitante`: o padrão é exigir sessão, então rota nova nasce protegida (o erro "esqueci de proteger" vira o erro inofensivo "esqueci de liberar"); (2) `?redirect=` só aceita caminho interno: `//host` e `/\host` seriam open redirect; (3) `aoExpirarSessao` navega por nome para `/entrar`, porque o `push('/')` da B0 era navegação duplicada quando o usuário já estava em `/`: a guarda não rodava e a tela ficava aberta sem sessão; (4) as regras de senha **não** são repetidas no front: a API é a fonte da verdade e a tela mostra a mensagem dela. Descartado: validar em JS também, que daria feedback antes do envio, mas duplicaria a regra em dois lugares; (5) cadastro faz login automático. Se só o login falhar, vai para `/entrar?conta=criada`, porque reenviar daria 409; (6) logout é só local, porque o JWT é stateless e a API não tem revogação. Um token copiado vale até expirar (6h). Ver Ideias futuras; (7) `/entrar` e `/cadastro` são lazy (code splitting por rota, nativo do Vite).
+- 2026-11-19 — **Fase B2, decisões técnicas**: (1) `curtiu` na API (opção escolhida pelo usuário) em vez de localStorage, que mentiria em outro navegador, ou de um "curtir" sem toggle; (2) `curtidas` e `curtiu` viram subconsultas correlacionadas no SELECT. Isso remove o N+1 que existia (um COUNT por post). Descartado: mais uma consulta por post, que dobraria o N+1; (3) o estado da lista fica num **composable**, não numa store pinia: o feed e o perfil (B3) têm listas independentes, e só muda a função que busca; (4) escritas não são otimistas: o estado só muda depois da confirmação da API. É mais simples e não precisa de rollback; o custo é a latência visível, aceitável aqui; (5) criar recarrega o feed em vez de inserir a resposta do POST, que não tem `autor_nick` e tem a data zerada (N14); (6) os componentes recebem as ações como funções async (`aoSalvar`, `aoCurtir`…) em vez de emitir eventos: assim o erro de cada ação aparece perto do botão que a disparou; (7) excluir usa `window.confirm`: é nativo, acessível e sem modal próprio. O link do autor para o perfil fica para a B3.
 - 2026-11-19 — **Compose único (pedido do usuário; opções escolhidas por ele)**: (1) `docker-compose.yml` na raiz, com contextos `./api` e `./web`. O `name: devbook` foi mantido, então o volume `devbook_mysql_data` é o mesmo; (2) web = build de produção (node:24-slim → nginx:alpine) em `:8080`, com `/api` encaminhado pelo nginx para `app:API_PORT`. Mesma origem: o container não depende de CORS, a API não mudou e o `npm run dev` na 5173 continua funcionando em paralelo. Descartados: nginx na 5173 (colidiria com o `npm run dev`) e Vite dev no container (não é build; HMR com bind mount é instável); (3) `${VAR:-padrão}` com os valores de dev, para o `up -d` funcionar sem `.env`. Trade-off aceito: a `SECRET_KEY` padrão é pública. Não criei um `.env.example` na raiz (duplicaria o `api/.env.example`); o README lista padrões e variáveis; (4) node **slim**, não alpine: o lock foi gerado em glibc; (5) o lock precisou de `@emnapi/*`, porque o npm 11.19 da imagem recusou o `npm ci` com o lock do npm 11.6 do host. Regenerei só o lock, com `--package-lock-only`, sem mudar versão. Descartado: `npm install` no Dockerfile, que tornaria o build não reprodutível.
 - 2026-11-19 — **Erro de processo (compose)**: o `git mv` deixou a renomeação preparada, e ela entrou no commit da imagem web (`4331dd0`) ainda com o conteúdo antigo (`build: .`). Nesse commit isolado, o compose da raiz não builda; o `ac1dbbf` conserta. Não reescrevi o histórico (pede confirmação; os commits são só locais).
 - 2026-11-19 — **Erro de processo (B1)**: o `b0a8d0d` foi comitado com o `vue-tsc` falhando, porque o `grep` no fim do encadeamento mascarou o código de saída (mesma classe do erro do H6). A correção veio em `1abcf57`. Desde então o front só é comitado depois de um script que roda testes e build e devolve o código de saída real.
@@ -195,6 +201,7 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 | `GET /publicacoes/usuario/{id}` | um objeto | **array** (mais recentes primeiro) |
 | `POST /publicacoes` | `autor_id` do corpo era aceito | ignorado (autor = token); inválido → 400 |
 | `POST .../curtir` repetido | 500 | 204 (idempotente) |
+| respostas de publicação | só `curtidas` | + `curtiu: bool` (o usuário do token curtiu), na fase B2; aditivo |
 | `POST /usuarios/{id}/seguir` a si mesmo | 403, mas gravava | 403 sem efeito; usuário inexistente → 404 |
 | `GET /usuarios/{id}/seguindo` | devolvia o próprio usuário | devolve quem ele segue |
 | id inexistente (GET/PUT/DELETE/curtir) | 200 zerado / panic / 500 | **404** |
@@ -213,6 +220,7 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 - Mensagens de validação da API com erros de digitação: `" e-mail inserido é inválido"` (espaço no início) e `"o senha é obrigatório"` (gênero). O front mostra essas mensagens como vêm.
 - `GET` autenticado sem header `Authorization` responde 401 `"token is malformed: token contains an invalid number of segments"`; um "token ausente" seria mais claro (visto ao testar o proxy).
 - A imagem da API usa `golang:1.24` inteira como runtime (~1 GB); um multi-stage com imagem mínima reduziria muito o tamanho.
+- Testes Go no host: a `TEST_DB_DSN` usa `loc=Local` (-03:00 no host) contra um MySQL em UTC, então os horários lidos nos testes ficam rotulados com o fuso errado (`20:33-03:00` para 17:33 local). O app não é afetado, porque API e banco rodam em UTC no container e a API devolve `...Z`. Correção possível: `loc=UTC` na DSN de teste.
 - A introdução do README da raiz ainda descreve o projeto só como "API RESTful".
 
 ## Ideias futuras
@@ -225,4 +233,4 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 - Paginação em feed/listas, rate limit no login, refresh token: fora do escopo, como combinado.
 
 ## Próximo passo
-Usuário escreve "continuar" → **B2**: feed (listar publicações próprias e de quem segue, criar, editar e excluir as próprias, curtir/descurtir). Inclui a prova real da sessão expirada.
+Usuário escreve "continuar" → **B3**: perfil e social (página de perfil com as publicações do usuário, seguir/parar de seguir, listas de seguidores/seguindo, busca de usuários; o @autor dos cartões vira link para o perfil).
