@@ -1,0 +1,24 @@
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+
+    # /api/... -> API. A barra final do proxy_pass tira o prefixo /api.
+    # Mesma origem para o navegador: CORS não entra em jogo.
+    location /api/ {
+        proxy_pass http://${API_UPSTREAM}/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # Arquivos com hash no nome podem ficar em cache "para sempre".
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # SPA: rota do vue-router (ex.: /entrar) recarregada cai no index.html.
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+}
