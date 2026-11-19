@@ -20,7 +20,7 @@ func rotasUsuarios(c *controllers.Controllers) []Route {
 			RequerAutenticacao: true,
 		},
 		{
-			URI:                "/usuario/{usuarioId}",
+			URI:                "/usuarios/{usuarioId}",
 			Metodo:             http.MethodGet,
 			Funcao:             c.BuscarUsuario,
 			RequerAutenticacao: true,

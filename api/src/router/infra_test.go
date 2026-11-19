@@ -11,6 +11,6 @@ func TestInfra_CadastraEBuscaUsuario(t *testing.T) {
 	a := novaAPI(t)
 	id, token := a.criarUsuario("infra")
 
-	w := a.req(http.MethodGet, fmt.Sprintf("/usuario/%d", id), "", token)
+	w := a.req(http.MethodGet, fmt.Sprintf("/usuarios/%d", id), "", token)
 	esperarStatus(t, w, http.StatusOK)
 }

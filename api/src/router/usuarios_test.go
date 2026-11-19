@@ -11,7 +11,7 @@ func TestN7_UsuarioInexistente404(t *testing.T) {
 	a := novaAPI(t)
 	_, token := a.criarUsuario("alice")
 
-	w := a.req(http.MethodGet, "/usuario/999999", "", token)
+	w := a.req(http.MethodGet, "/usuarios/999999", "", token)
 	esperarStatus(t, w, http.StatusNotFound)
 }
 
@@ -94,4 +94,14 @@ func TestN4_SeguindoListaQuemOUsuarioSegue(t *testing.T) {
 	if len(lista) != 2 || !ids[bobID] || !ids[carolID] {
 		t.Fatalf("seguindo = %s; esperado bob (%d) e carol (%d)", w.Body.String(), bobID, carolID)
 	}
+}
+
+// H13: o detalhe do usuário fica em /usuarios/{id} (plural, como no resto da API).
+func TestH13_BuscarUsuarioNaRotaPlural(t *testing.T) {
+	a := novaAPI(t)
+	id, token := a.criarUsuario("alice")
+
+	esperarStatus(t, a.req(http.MethodGet, "/usuarios/"+strconv.FormatUint(id, 10), "", token), http.StatusOK)
+	// a rota singular antiga deixa de existir
+	esperarStatus(t, a.req(http.MethodGet, "/usuario/"+strconv.FormatUint(id, 10), "", token), http.StatusNotFound)
 }
