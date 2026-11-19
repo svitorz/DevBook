@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { RouterLinkStub, flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../api/client'
 import type { Publicacao } from '../api/types'
@@ -17,6 +17,7 @@ const PUB: Publicacao = {
 
 function montar(props: Record<string, unknown> = {}) {
   return mount(CartaoPublicacao, {
+    global: { stubs: { RouterLink: RouterLinkStub } },
     props: {
       publicacao: PUB,
       ehMinha: false,
@@ -36,6 +37,7 @@ describe('CartaoPublicacao', () => {
     expect(w.text()).toContain('Título')
     expect(w.text()).toContain('Conteúdo do post')
     expect(w.text()).toContain('@ana')
+    expect(w.getComponent(RouterLinkStub).props('to')).toBe('/perfil/1') // autor_id
     expect(w.get('time').attributes('datetime')).toBe(PUB.criadaEm)
     expect(w.get('[data-testid=curtir]').text()).toContain('2')
   })

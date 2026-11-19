@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { RouterLinkStub, flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../api/client'
@@ -23,7 +23,7 @@ beforeEach(() => {
 describe('InicioView (feed)', () => {
   it('lista o feed e só as publicações do usuário logado têm Editar', async () => {
     vi.spyOn(publicacoesApi, 'feed').mockResolvedValue([pub(2, 9), pub(1, 1)])
-    const w = mount(InicioView)
+    const w = mount(InicioView, { global: { stubs: { RouterLink: RouterLinkStub } } })
     await flushPromises()
 
     const cartoes = w.findAll('article')
@@ -34,7 +34,7 @@ describe('InicioView (feed)', () => {
 
   it('feed vazio mostra orientação', async () => {
     vi.spyOn(publicacoesApi, 'feed').mockResolvedValue([])
-    const w = mount(InicioView)
+    const w = mount(InicioView, { global: { stubs: { RouterLink: RouterLinkStub } } })
     await flushPromises()
     expect(w.get('[data-testid=vazio]').text()).toContain('Nenhuma publicação')
   })
@@ -44,7 +44,7 @@ describe('InicioView (feed)', () => {
       .spyOn(publicacoesApi, 'feed')
       .mockRejectedValueOnce(new ApiError(0, 'Não foi possível conectar à API.'))
       .mockResolvedValueOnce([pub(1, 1)])
-    const w = mount(InicioView)
+    const w = mount(InicioView, { global: { stubs: { RouterLink: RouterLinkStub } } })
     await flushPromises()
     expect(w.get('[role=alert]').text()).toContain('Não foi possível conectar à API.')
 
@@ -58,7 +58,7 @@ describe('InicioView (feed)', () => {
   it('publicar cria e recarrega o feed', async () => {
     vi.spyOn(publicacoesApi, 'feed').mockResolvedValueOnce([]).mockResolvedValueOnce([pub(3, 1)])
     const criar = vi.spyOn(publicacoesApi, 'criar').mockResolvedValue(pub(3, 1))
-    const w = mount(InicioView)
+    const w = mount(InicioView, { global: { stubs: { RouterLink: RouterLinkStub } } })
     await flushPromises()
 
     await w.get('input[name=titulo]').setValue('Oi')

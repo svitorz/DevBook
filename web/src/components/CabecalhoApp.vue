@@ -17,7 +17,9 @@ async function sair() {
   <header class="cabecalho">
     <div class="container cabecalho-conteudo">
       <RouterLink to="/" class="marca">DevBook</RouterLink>
-      <nav v-if="sessao.estaLogado" aria-label="Conta">
+      <nav v-if="sessao.estaLogado" class="nav-principal" aria-label="Principal">
+        <RouterLink to="/buscar">Buscar</RouterLink>
+        <RouterLink :to="`/perfil/${sessao.usuarioId}`">Meu perfil</RouterLink>
         <button type="button" class="botao-texto" data-testid="sair" @click="sair">Sair</button>
       </nav>
     </div>

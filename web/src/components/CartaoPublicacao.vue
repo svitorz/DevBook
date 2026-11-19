@@ -47,7 +47,7 @@ async function salvarEdicao(dados: DadosPublicacao) {
 <template>
   <article class="cartao publicacao">
     <header class="publicacao-topo">
-      <span class="autor">@{{ publicacao.autor_nick }}</span>
+      <RouterLink :to="`/perfil/${publicacao.autor_id}`" class="autor">@{{ publicacao.autor_nick }}</RouterLink>
       <time :datetime="publicacao.criadaEm">{{ data }}</time>
     </header>
 
