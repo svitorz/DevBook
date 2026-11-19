@@ -14,6 +14,8 @@ var (
 	StringConexaoBanco = ""
 	Port               = 0
 	SecretKey          []byte
+	// Origem do front liberada no CORS (Vite usa 5173 por padrão).
+	CorsOrigin = "http://localhost:5173"
 )
 
 // Carregar lê a configuração do ambiente. Retorna erro se algo obrigatório faltar.
@@ -37,6 +39,10 @@ func Carregar() error {
 		os.Getenv("DB_PORT"),
 		os.Getenv("DB_NAME"),
 	)
+
+	if origem := os.Getenv("CORS_ORIGIN"); origem != "" {
+		CorsOrigin = origem
+	}
 
 	SecretKey = []byte(os.Getenv("SECRET_KEY"))
 	if len(SecretKey) == 0 {
