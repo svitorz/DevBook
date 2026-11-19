@@ -50,6 +50,7 @@ export function criarRouter(history: RouterHistory = createWebHistory()): Router
         component: () => import('../views/ConexoesView.vue'),
         props: (r) => ({ id: Number(r.params.id), tipo: r.params.tipo }),
       },
+      { path: '/conta', name: 'conta', component: () => import('../views/ContaView.vue') },
       { path: '/buscar', name: 'buscar', component: () => import('../views/BuscaView.vue') },
       { path: '/:qualquer(.*)*', redirect: '/' },
     ],

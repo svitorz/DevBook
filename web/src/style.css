@@ -6,6 +6,7 @@
   --borda: #dfe3e8;
   --primaria: #2f6fde;
   --perigo: #c6362f;
+  --sucesso: #1f7a3d;
 
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
@@ -22,6 +23,7 @@
     --borda: #30343d;
     --primaria: #6b9cf0;
     --perigo: #ef6b63;
+    --sucesso: #5fc47f;
   }
 }
 
@@ -354,4 +356,28 @@ textarea {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+.conta {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.conta .titulo-pagina {
+  margin-bottom: 0;
+}
+
+.sucesso {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--sucesso);
+}
+
+.zona-perigo {
+  border-color: var(--perigo);
+}
+
+.botao-perigo {
+  background: var(--perigo);
 }

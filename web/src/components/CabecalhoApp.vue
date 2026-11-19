@@ -20,6 +20,7 @@ async function sair() {
       <nav v-if="sessao.estaLogado" class="nav-principal" aria-label="Principal">
         <RouterLink to="/buscar">Buscar</RouterLink>
         <RouterLink :to="`/perfil/${sessao.usuarioId}`">Meu perfil</RouterLink>
+        <RouterLink to="/conta">Minha conta</RouterLink>
         <button type="button" class="botao-texto" data-testid="sair" @click="sair">Sair</button>
       </nav>
     </div>

@@ -34,6 +34,7 @@ async function entrar() {
     <p v-if="route.query.conta === 'criada'" class="aviso" role="status">
       Conta criada. Entre com seu e-mail e senha.
     </p>
+    <p v-else-if="route.query.conta === 'excluida'" class="aviso" role="status">Conta excluída.</p>
     <form class="cartao formulario" @submit.prevent="entrar">
       <label>
         E-mail
