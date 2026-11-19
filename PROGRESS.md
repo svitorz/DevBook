@@ -21,8 +21,8 @@ A análise abaixo é sobre esse código; diferenças do `database/sql` antigo (`
 
 ### Fase 1 — rede de segurança
 - [x] Decisão GORM vs database/sql → GORM
-- [ ] compose + `.env.example` coerentes, stack sobe
-- [ ] Script de fumaça cobrindo todos os endpoints + resultado atual registrado
+- [x] compose + `.env.example` coerentes, stack sobe (`6c3dfce`)
+- [x] Script de fumaça cobrindo todos os endpoints + resultado atual registrado
 - [ ] Um `*gorm.DB` (pool) criado no boot e injetado
 
 ### Fase 2 — correções (pendente)
@@ -61,6 +61,37 @@ A análise abaixo é sobre esse código; diferenças do `database/sql` antigo (`
 - **N11** (baixa) Respostas 204 tentam escrever `null` no corpo; `AtualizarUsuario` responde 200 com `null` (`usuarios.go:154`).
 - **N12** (baixa) Erro de token em Atualizar/Deletar publicação retorna 403 em vez de 401 (`publicacoes.go:113,170`).
 - **N13** (baixa) `WORKDIR .` no Dockerfile resolve para `/go` (WORKDIR da imagem golang); o volume `.:/app` não serve para nada.
+
+## Fumaça (`api/scripts/smoke.sh`)
+Como rodar: `cd api && docker compose --env-file .env.example up -d --build && ./scripts/smoke.sh`
+(sem `.env`, o compose lê o exemplo; com `cp .env.example .env` basta `docker compose up -d`).
+O ESPERADO de cada item é o contrato-alvo da fase 2. Itens `[contrato]` dependem de decisão a confirmar na fase 2
+(409 duplicado, login em JSON `{"token"}`, 400 em validação, curtir idempotente 204, senha atual errada 401, CORS).
+
+### Baseline (Fase 1, antes de qualquer correção de lógica): 43 OK / 23 FALHA
+| Item que falha | Obtido hoje | Bug |
+|---|---|---|
+| cadastro não expõe senha | hash bcrypt no corpo | N1 |
+| [contrato] e-mail duplicado → 409 | 500 com erro cru do MySQL | H14 |
+| login não revela se e-mail existe | mensagens de bcrypt diferentes | N2 |
+| [contrato] login responde JSON | texto puro | H14 |
+| [contrato] `GET /usuarios/{id}` | 405 | H13 |
+| usuário inexistente → 404 (2 itens) | 200 com objeto zerado | N7 |
+| atualizar perfil sem senha → 204 | 400 "senha ≥ 8" | H8 |
+| A não vira seguidor de si mesmo | 403, mas o follow é gravado | H4 |
+| `/seguindo` (2 itens) | devolve o próprio A repetido | N4 |
+| autor = usuário do token | `autor_id` do corpo vence | H2 |
+| [contrato] publicação inválida → 400 | 500 | H14 |
+| publicação inexistente → 404 (2 itens) | 200 com objeto zerado | N7 |
+| `/publicacoes/usuario/{id}` é lista | um objeto só | H15 |
+| editar/deletar post de outro → 403 (2 itens) | **000 (panic)** | H3 |
+| editar post inexistente → 404 | **000 (panic)** | H3/N7 |
+| [contrato] curtir 2x → 204 | 500 PK duplicada | N5 |
+| curtir post inexistente → 404 | 500 FK | N5 |
+| deletar próprio post sem corpo → 204 | 400 "unexpected end of JSON input" | N3 |
+| [contrato] preflight CORS | sem header | H16 |
+
+Não cobertos pela fumaça (provar com teste Go na fase 2): H1 (registro duplicado de rota), H7 (SECRET_KEY vazia), H9/H10/H11 (infra).
 
 ## Log de decisões
 - 2026-11-19 — Branch `chore/api-hardening` criada de `main` sem mexer no WIP não comitado (switch carrega as mudanças; nada foi descartado).
