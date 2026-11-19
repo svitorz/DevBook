@@ -10,7 +10,9 @@ import (
 )
 
 func main() {
-	config.Carregar()
+	if err := config.Carregar(); err != nil {
+		log.Fatal(err)
+	}
 
 	db, err := database.Conectar()
 	if err != nil {
