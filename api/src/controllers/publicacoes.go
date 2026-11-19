@@ -207,7 +207,8 @@ func (c *Controllers) CurtirPublicacao(w http.ResponseWriter, r *http.Request) {
 
 	savedPost, err := repository.FindById(postId)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responderErroDeBusca(w, err)
+		return
 	}
 
 	if err = repository.LikePost(userId, savedPost.ID); err != nil {
@@ -237,7 +238,8 @@ func (c *Controllers) DescurtirPublicacao(w http.ResponseWriter, r *http.Request
 
 	savedPost, err := repository.FindById(postId)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responderErroDeBusca(w, err)
+		return
 	}
 
 	if err = repository.UnlikePost(userId, savedPost.ID); err != nil {

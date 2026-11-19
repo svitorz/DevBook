@@ -96,3 +96,36 @@ func TestN3_DeletarPropriaPublicacaoSemCorpo(t *testing.T) {
 	w = a.req(http.MethodGet, path, "", token)
 	esperarStatus(t, w, http.StatusNotFound)
 }
+
+// N5: curtir duas vezes é idempotente (204) e conta uma curtida só.
+func TestN5_CurtirDuasVezesEIdempotente(t *testing.T) {
+	a := novaAPI(t)
+	_, tokenAlice := a.criarUsuario("alice")
+	_, tokenBob := a.criarUsuario("bob")
+	postID := a.criarPublicacao(tokenAlice, "post")
+	path := fmt.Sprintf("/publicacoes/%d", postID)
+
+	esperarStatus(t, a.req(http.MethodPost, path+"/curtir", "", tokenBob), http.StatusNoContent)
+	esperarStatus(t, a.req(http.MethodPost, path+"/curtir", "", tokenBob), http.StatusNoContent)
+
+	var p publicacaoResp
+	decodificar(t, a.req(http.MethodGet, path, "", tokenBob), &p)
+	if p.Curtidas != 1 {
+		t.Fatalf("curtidas = %d, esperado 1", p.Curtidas)
+	}
+}
+
+// N5: curtir/descurtir publicação inexistente responde 404.
+func TestN5_CurtirPublicacaoInexistente404(t *testing.T) {
+	a := novaAPI(t)
+	_, token := a.criarUsuario("alice")
+
+	for _, acao := range []string{"curtir", "descurtir"} {
+		w := a.req(http.MethodPost, "/publicacoes/999999/"+acao, "", token)
+		esperarStatus(t, w, http.StatusNotFound)
+		var erro struct {
+			Erro string `json:"erro"`
+		}
+		decodificar(t, w, &erro)
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"api/src/models"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const colunasPublicacao = "PUBLICACOES.id, PUBLICACOES.titulo, PUBLICACOES.conteudo, PUBLICACOES.autor_id, PUBLICACOES.criadaEm, USUARIOS.nick AS autor_nick"
@@ -104,7 +105,10 @@ func (p publicacoes) FindByUserId(userId uint64) (models.Publicacao, error) {
 }
 
 func (p publicacoes) LikePost(userId uint64, postId uint64) error {
-	return p.db.Create(&models.Curtida{UserID: userId, PostID: postId}).Error
+	// Idempotente: curtir de novo não é erro (mesma ideia do Follow).
+	return p.db.
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(&models.Curtida{UserID: userId, PostID: postId}).Error
 }
 
 func (p publicacoes) UnlikePost(userId uint64, postId uint64) error {
