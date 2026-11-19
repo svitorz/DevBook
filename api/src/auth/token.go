@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func CreateToken(userId uint64) (string, error) {
@@ -24,7 +24,7 @@ func CreateToken(userId uint64) (string, error) {
 
 func ValidateToken(r *http.Request) error {
 	tokenString := getToken(r)
-	token, err := jwt.Parse(tokenString, getVerifyKey)
+	token, err := jwt.Parse(tokenString, getVerifyKey, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func getVerifyKey(token *jwt.Token) (interface{}, error) {
 
 func GetUserID(r *http.Request) (uint64, error) {
 	tokenString := getToken(r)
-	token, err := jwt.Parse(tokenString, getVerifyKey)
+	token, err := jwt.Parse(tokenString, getVerifyKey, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 	if err != nil {
 		return 0, err
 	}

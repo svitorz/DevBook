@@ -20,17 +20,12 @@ func Configurar(r *mux.Router, c *controllers.Controllers) *mux.Router {
 	routes = append(routes, rotaLogin(c))
 	routes = append(routes, rotasPublicacoes(c)...)
 	for _, route := range routes {
-
+		handler := route.Funcao
 		if route.RequerAutenticacao {
-			r.HandleFunc(route.URI,
-				middleware.Logger(
-					middleware.Autenticar(route.Funcao)),
-			).Methods(route.Metodo)
-		} else {
-			r.HandleFunc(route.URI, route.Funcao).Methods(route.Metodo)
+			handler = middleware.Autenticar(handler)
 		}
-
-		r.HandleFunc(route.URI, route.Funcao).Methods(route.Metodo)
+		// Um único registro por rota; o Logger envolve todas.
+		r.HandleFunc(route.URI, middleware.Logger(handler)).Methods(route.Metodo)
 	}
 
 	return r

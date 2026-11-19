@@ -19,7 +19,7 @@ import (
 func (c *Controllers) CriarUsuario(w http.ResponseWriter, r *http.Request) {
 	request, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		responses.Err(w, http.StatusUnprocessableEntity, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -37,10 +37,11 @@ func (c *Controllers) CriarUsuario(w http.ResponseWriter, r *http.Request) {
 	repository := repository.NewUsersRepository(c.db)
 	usuario.ID, err = repository.Store(usuario)
 	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
+		responderErroDeEscrita(w, err)
 		return
 	}
 
+	usuario.Senha = "" // nunca devolver o hash (omitempty remove o campo)
 	responses.JSON(w, http.StatusCreated, usuario)
 }
 
@@ -69,7 +70,7 @@ func (c *Controllers) BuscarUsuario(w http.ResponseWriter, r *http.Request) {
 	repository := repository.NewUsersRepository(c.db)
 	user, err := repository.Show(userID)
 	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
+		responderErroDeBusca(w, err)
 		return
 	}
 
@@ -98,7 +99,7 @@ func (c *Controllers) AtualizarUsuario(w http.ResponseWriter, r *http.Request) {
 
 	request, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		responses.Err(w, http.StatusUnprocessableEntity, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -116,11 +117,11 @@ func (c *Controllers) AtualizarUsuario(w http.ResponseWriter, r *http.Request) {
 
 	repository := repository.NewUsersRepository(c.db)
 	if err = repository.Update(userID, user); err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
+		responderErroDeEscrita(w, err)
 		return
 	}
 
-	responses.JSON(w, http.StatusOK, nil)
+	responses.JSON(w, http.StatusNoContent, nil)
 }
 
 func (c *Controllers) DeletarUsuario(w http.ResponseWriter, r *http.Request) {
@@ -166,12 +167,13 @@ func (c *Controllers) SeguirUsuario(w http.ResponseWriter, r *http.Request) {
 
 	if seguidorID == usuarioId {
 		responses.Err(w, http.StatusForbidden, errors.New("Não é possível seguir você mesmo."))
+		return
 	}
 
 	repository := repository.NewUsersRepository(c.db)
 
 	if err = repository.Follow(usuarioId, seguidorID); err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
+		responderErroDeEscrita(w, err) // usuário inexistente -> 404 (FK)
 		return
 	}
 
@@ -194,6 +196,7 @@ func (c *Controllers) PararDeSeguirUsuario(w http.ResponseWriter, r *http.Reques
 
 	if seguidorID == usuarioId {
 		responses.Err(w, http.StatusForbidden, errors.New("Não é possível parar de seguir você mesmo."))
+		return
 	}
 
 	repository := repository.NewUsersRepository(c.db)
@@ -263,7 +266,7 @@ func (c *Controllers) AtualizarSenha(w http.ResponseWriter, r *http.Request) {
 
 	request, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		responses.Err(w, http.StatusUnprocessableEntity, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 	var senha models.Senha

@@ -10,7 +10,7 @@ INSERT INTO USUARIOS (
 ("Usuario 7", "user_7", "usuario7@gmail.com", "$2a$10$R/F1FmKK4BGB8an8n/dcOew5plWtsj6I3.SBn1mlYEkwLZrQgsFL6"),
 ("Usuario 8", "user_8", "usuario8@gmail.com", "$2a$10$R/F1FmKK4BGB8an8n/dcOew5plWtsj6I3.SBn1mlYEkwLZrQgsFL6");
 
-INSERT INTO SEGUIDORES(usuario_id, seguidor)
+INSERT INTO SEGUIDORES(usuario_id, seguidor_id)
 VALUES
 (1,2),
   (2,3),

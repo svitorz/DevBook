@@ -50,34 +50,14 @@ func (usuario *Usuario) validar(action string) error {
 		return errors.New(" e-mail inserido é inválido")
 	}
 
-	if action == "cadastrar" && usuario.Senha == "" {
-		return errors.New("o senha é obrigatório e não pode estar em branco")
+	// A senha só é validada no cadastro: o PUT de perfil não a envia
+	// (troca de senha tem rota própria, /atualizar-senha).
+	if action == "cadastrar" {
+		if err := validarSenha(usuario.Senha); err != nil {
+			return err
+		}
 	}
 
-	if len(usuario.Senha) < 8 {
-		return errors.New("a senha deve ter ao menos 8 caracteres")
-	}
-
-	if ok, err := regexp.MatchString(`[A-Z]`, usuario.Senha); err != nil {
-		return err
-	} else if !ok {
-		return errors.New("a senha deve conter ao menos uma letra maiúscula")
-	}
-	if ok, err := regexp.MatchString(`[a-z]`, usuario.Senha); err != nil {
-		return err
-	} else if !ok {
-		return errors.New("a senha deve conter ao menos uma letra minúscula")
-	}
-	if ok, err := regexp.MatchString(`[0-9]`, usuario.Senha); err != nil {
-		return err
-	} else if !ok {
-		return errors.New("a senha deve conter ao menos um número")
-	}
-	if ok, err := regexp.MatchString(`[!@#\$%\^&\*\(\)_\+\-=\[\]\{\};':"\\|,.<>\/?]`, usuario.Senha); err != nil {
-		return err
-	} else if !ok {
-		return errors.New("a senha deve conter ao menos um caracter especial. EX: !@#$")
-	}
 	if len(usuario.Nome) > 50 {
 		return errors.New("o nome não pode ter mais que 50 caracteres")
 	}
@@ -86,6 +66,38 @@ func (usuario *Usuario) validar(action string) error {
 	}
 	if len(usuario.Email) > 50 {
 		return errors.New("o email não pode ter mais que 50 caracteres")
+	}
+	return nil
+}
+
+func validarSenha(senha string) error {
+	if senha == "" {
+		return errors.New("o senha é obrigatório e não pode estar em branco")
+	}
+
+	if len(senha) < 8 {
+		return errors.New("a senha deve ter ao menos 8 caracteres")
+	}
+
+	if ok, err := regexp.MatchString(`[A-Z]`, senha); err != nil {
+		return err
+	} else if !ok {
+		return errors.New("a senha deve conter ao menos uma letra maiúscula")
+	}
+	if ok, err := regexp.MatchString(`[a-z]`, senha); err != nil {
+		return err
+	} else if !ok {
+		return errors.New("a senha deve conter ao menos uma letra minúscula")
+	}
+	if ok, err := regexp.MatchString(`[0-9]`, senha); err != nil {
+		return err
+	} else if !ok {
+		return errors.New("a senha deve conter ao menos um número")
+	}
+	if ok, err := regexp.MatchString(`[!@#\$%\^&\*\(\)_\+\-=\[\]\{\};':"\\|,.<>\/?]`, senha); err != nil {
+		return err
+	} else if !ok {
+		return errors.New("a senha deve conter ao menos um caracter especial. EX: !@#$")
 	}
 	return nil
 }

@@ -47,9 +47,8 @@ func (u usuarios) Show(ID uint64) (models.Usuario, error) {
 	if err := u.db.
 		Select(colunasUsuario).
 		Where("USUARIOS.id = ?", ID).
-		Limit(1).
-		Find(&usuario).Error; err != nil {
-		return models.Usuario{}, err
+		Take(&usuario).Error; err != nil {
+		return models.Usuario{}, err // gorm.ErrRecordNotFound se não existir
 	}
 
 	return usuario, nil
@@ -112,7 +111,8 @@ func (u usuarios) GetFollowing(usuarioId uint64) ([]models.Usuario, error) {
 
 	if err := u.db.
 		Select(colunasUsuario).
-		Joins("INNER JOIN SEGUIDORES s ON s.seguidor_id = USUARIOS.id").
+		// Quem usuarioId segue: linhas em que ele é o seguidor; o JOIN traz o seguido.
+		Joins("INNER JOIN SEGUIDORES s ON s.usuario_id = USUARIOS.id").
 		Where("s.seguidor_id = ?", usuarioId).
 		Find(&users).Error; err != nil {
 		return nil, err

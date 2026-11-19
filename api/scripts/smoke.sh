@@ -111,11 +111,8 @@ check "listagem contém A" "map(.id) | index($A_ID) != null"
 req GET "/usuarios/$A_ID" "" "$TA"
 expect "[contrato] H13 buscar usuário em /usuarios/{id}" 200
 
-req GET "/usuario/$A_ID" "" "$TA"
-expect "buscar usuário na rota atual /usuario/{id}" 200
-
-req GET "/usuario/999999999" "" "$TA"
-expect "N7 buscar usuário inexistente (rota atual)" 404
+req GET "/usuarios/999999999" "" "$TA"
+expect "N7 buscar usuário inexistente" 404
 
 req PUT "/usuarios/$A_ID" "{\"nome\":\"Alice Editada\",\"nick\":\"$A_NICK\",\"email\":\"$A_EMAIL\"}" "$TA"
 expect "H8 atualizar perfil sem enviar senha" 204
@@ -257,8 +254,8 @@ expect "deletar outro usuário" 403
 req DELETE "/usuarios/$A_ID" "" "$TA"
 expect "deletar a si mesmo" 204
 
-req GET "/usuario/$A_ID" "" "$TB"
-expect "N7 usuário deletado não existe mais (rota atual)" 404
+req GET "/usuarios/$A_ID" "" "$TB"
+expect "N7 usuário deletado não existe mais" 404
 
 req DELETE "/usuarios/$B_ID" "" "$TB"
 expect "limpeza: deletar B" 204

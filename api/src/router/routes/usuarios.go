@@ -20,7 +20,7 @@ func rotasUsuarios(c *controllers.Controllers) []Route {
 			RequerAutenticacao: true,
 		},
 		{
-			URI:                "/usuario/{usuarioId}",
+			URI:                "/usuarios/{usuarioId}",
 			Metodo:             http.MethodGet,
 			Funcao:             c.BuscarUsuario,
 			RequerAutenticacao: true,
@@ -35,7 +35,7 @@ func rotasUsuarios(c *controllers.Controllers) []Route {
 			URI:                "/usuarios/{usuarioId}",
 			Metodo:             http.MethodDelete,
 			Funcao:             c.DeletarUsuario,
-			RequerAutenticacao: false,
+			RequerAutenticacao: true,
 		},
 		{
 			URI:                "/usuarios/{usuarioId}/seguir",

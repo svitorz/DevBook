@@ -6,6 +6,7 @@ import (
 	"api/src/repository"
 	"api/src/responses"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -16,34 +17,33 @@ import (
 func (c *Controllers) CriarPublicacao(w http.ResponseWriter, r *http.Request) {
 	userId, err := auth.GetUserID(r)
 	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
+		responses.Err(w, http.StatusUnauthorized, err)
 		return
 	}
 
 	request, err := io.ReadAll(r.Body)
 	if err != nil {
-		responses.Err(w, http.StatusUnprocessableEntity, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 
 	var publicacao models.Publicacao
-
-	publicacao.AutorID = userId
-
 	if err = json.Unmarshal(request, &publicacao); err != nil {
-		responses.Err(w, http.StatusForbidden, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
+	// Depois do Unmarshal: o autor vem do token, nunca do corpo.
+	publicacao.AutorID = userId
 
 	if err := publicacao.Preparar(); err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 
 	newPostRespository := repository.NewPostsRepository(c.db)
 	publicacao.ID, err = newPostRespository.Store(publicacao)
 	if err != nil {
-		responses.Err(w, http.StatusBadRequest, err)
+		responderErroDeEscrita(w, err)
 		return
 	}
 
@@ -55,13 +55,13 @@ func (c *Controllers) BuscarPublicacao(w http.ResponseWriter, r *http.Request) {
 
 	postId, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
 	if err != nil {
-		responses.Err(w, http.StatusNoContent, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 	repository := repository.NewPostsRepository(c.db)
 	post, err := repository.FindById(postId)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responderErroDeBusca(w, err)
 		return
 	}
 
@@ -88,24 +88,26 @@ func (c *Controllers) BuscarPublicacoes(w http.ResponseWriter, r *http.Request) 
 func (c *Controllers) AtualizarPublicacao(w http.ResponseWriter, r *http.Request) {
 	userId, err := auth.GetUserID(r)
 	if err != nil {
-		responses.Err(w, http.StatusForbidden, err)
+		responses.Err(w, http.StatusUnauthorized, err)
 		return
 	}
 
 	params := mux.Vars(r)
 	postId, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responses.Err(w, http.StatusBadRequest, err)
+		return
 	}
 
 	repository := repository.NewPostsRepository(c.db)
 	savedPost, err := repository.FindById(postId)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responderErroDeBusca(w, err)
+		return
 	}
 
 	if savedPost.AutorID != userId {
-		responses.Err(w, http.StatusForbidden, err)
+		responses.Err(w, http.StatusForbidden, errors.New("não é possível alterar uma publicação de outro usuário"))
 		return
 	}
 
@@ -122,7 +124,7 @@ func (c *Controllers) AtualizarPublicacao(w http.ResponseWriter, r *http.Request
 	}
 
 	if err = post.Preparar(); err != nil {
-		responses.Err(w, http.StatusUnauthorized, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -137,41 +139,26 @@ func (c *Controllers) AtualizarPublicacao(w http.ResponseWriter, r *http.Request
 func (c *Controllers) DeletarPublicacao(w http.ResponseWriter, r *http.Request) {
 	userId, err := auth.GetUserID(r)
 	if err != nil {
-		responses.Err(w, http.StatusForbidden, err)
+		responses.Err(w, http.StatusUnauthorized, err)
 		return
 	}
 
 	params := mux.Vars(r)
 	postId, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responses.Err(w, http.StatusBadRequest, err)
+		return
 	}
 
 	repository := repository.NewPostsRepository(c.db)
 	savedPost, err := repository.FindById(postId)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responderErroDeBusca(w, err)
+		return
 	}
 
 	if savedPost.AutorID != userId {
-		responses.Err(w, http.StatusForbidden, err)
-		return
-	}
-
-	request, err := io.ReadAll(r.Body)
-	if err != nil {
-		responses.Err(w, http.StatusBadRequest, err)
-		return
-	}
-
-	var post models.Publicacao
-	if err = json.Unmarshal(request, &post); err != nil {
-		responses.Err(w, http.StatusBadRequest, err)
-		return
-	}
-
-	if err = post.Preparar(); err != nil {
-		responses.Err(w, http.StatusUnauthorized, err)
+		responses.Err(w, http.StatusForbidden, errors.New("não é possível alterar uma publicação de outro usuário"))
 		return
 	}
 
@@ -186,19 +173,19 @@ func (c *Controllers) DeletarPublicacao(w http.ResponseWriter, r *http.Request) 
 func (c *Controllers) BuscarPublicacaoDoUsuario(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	postId, err := strconv.ParseUint(params["usuarioId"], 10, 64)
+	usuarioId, err := strconv.ParseUint(params["usuarioId"], 10, 64)
 	if err != nil {
-		responses.Err(w, http.StatusNoContent, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 	repository := repository.NewPostsRepository(c.db)
-	post, err := repository.FindByUserId(postId)
+	publicacoes, err := repository.FindByUserId(usuarioId)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responses.Err(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	responses.JSON(w, http.StatusOK, post)
+	responses.JSON(w, http.StatusOK, publicacoes)
 }
 
 func (c *Controllers) CurtirPublicacao(w http.ResponseWriter, r *http.Request) {
@@ -212,7 +199,7 @@ func (c *Controllers) CurtirPublicacao(w http.ResponseWriter, r *http.Request) {
 
 	postId, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
 	if err != nil {
-		responses.Err(w, http.StatusNoContent, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -220,7 +207,8 @@ func (c *Controllers) CurtirPublicacao(w http.ResponseWriter, r *http.Request) {
 
 	savedPost, err := repository.FindById(postId)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responderErroDeBusca(w, err)
+		return
 	}
 
 	if err = repository.LikePost(userId, savedPost.ID); err != nil {
@@ -242,7 +230,7 @@ func (c *Controllers) DescurtirPublicacao(w http.ResponseWriter, r *http.Request
 
 	postId, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
 	if err != nil {
-		responses.Err(w, http.StatusNoContent, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -250,7 +238,8 @@ func (c *Controllers) DescurtirPublicacao(w http.ResponseWriter, r *http.Request
 
 	savedPost, err := repository.FindById(postId)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responderErroDeBusca(w, err)
+		return
 	}
 
 	if err = repository.UnlikePost(userId, savedPost.ID); err != nil {
