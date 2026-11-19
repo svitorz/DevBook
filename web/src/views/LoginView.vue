@@ -31,6 +31,9 @@ async function entrar() {
 <template>
   <main class="container estreito">
     <h1>Entrar</h1>
+    <p v-if="route.query.conta === 'criada'" class="aviso" role="status">
+      Conta criada. Entre com seu e-mail e senha.
+    </p>
     <form class="cartao formulario" @submit.prevent="entrar">
       <label>
         E-mail

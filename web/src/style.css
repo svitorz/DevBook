@@ -131,3 +131,10 @@ a:focus-visible {
   text-align: center;
   color: var(--texto-suave);
 }
+
+.aviso {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--superficie);
+  border-left: 3px solid var(--primaria);
+}

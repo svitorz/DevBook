@@ -86,6 +86,11 @@ describe('LoginView', () => {
     await flushPromises()
   })
 
+  it('vindo do cadastro, avisa que a conta foi criada', async () => {
+    const { wrapper } = await montar('/entrar?conta=criada')
+    expect(wrapper.get('[role=status]').text()).toContain('Conta criada')
+  })
+
   it('tem link para o cadastro', async () => {
     const { wrapper } = await montar()
     expect(wrapper.find('a[href="/cadastro"]').exists()).toBe(true)
