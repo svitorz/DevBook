@@ -173,19 +173,19 @@ func (c *Controllers) DeletarPublicacao(w http.ResponseWriter, r *http.Request) 
 func (c *Controllers) BuscarPublicacaoDoUsuario(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	postId, err := strconv.ParseUint(params["usuarioId"], 10, 64)
+	usuarioId, err := strconv.ParseUint(params["usuarioId"], 10, 64)
 	if err != nil {
-		responses.Err(w, http.StatusNoContent, err)
+		responses.Err(w, http.StatusBadRequest, err)
 		return
 	}
 	repository := repository.NewPostsRepository(c.db)
-	post, err := repository.FindByUserId(postId)
+	publicacoes, err := repository.FindByUserId(usuarioId)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responses.Err(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	responses.JSON(w, http.StatusOK, post)
+	responses.JSON(w, http.StatusOK, publicacoes)
 }
 
 func (c *Controllers) CurtirPublicacao(w http.ResponseWriter, r *http.Request) {

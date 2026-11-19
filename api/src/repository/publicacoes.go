@@ -81,27 +81,28 @@ func (p publicacoes) Destroy(publicacaoId uint64) error {
 	return p.db.Delete(&models.Publicacao{}, publicacaoId).Error
 }
 
-func (p publicacoes) FindByUserId(userId uint64) (models.Publicacao, error) {
-	var post models.Publicacao
+// FindByUserId devolve todas as publicações do autor, mais recentes primeiro.
+func (p publicacoes) FindByUserId(userId uint64) ([]models.Publicacao, error) {
+	publicacoes := []models.Publicacao{} // [] e não null quando vazio
 
 	if err := p.db.
 		Select(colunasPublicacao).
 		Joins("INNER JOIN USUARIOS ON USUARIOS.id = PUBLICACOES.autor_id").
 		Where("PUBLICACOES.autor_id = ?", userId).
-		Limit(1).
-		Find(&post).Error; err != nil {
-		return models.Publicacao{}, err
+		Order("PUBLICACOES.id DESC").
+		Find(&publicacoes).Error; err != nil {
+		return nil, err
 	}
 
-	if post.ID != 0 {
-		var err error
-		post.Curtidas, err = p.getLikes(post.ID)
+	for i := range publicacoes {
+		curtidas, err := p.getLikes(publicacoes[i].ID)
 		if err != nil {
-			return models.Publicacao{}, err
+			return nil, err
 		}
+		publicacoes[i].Curtidas = curtidas
 	}
 
-	return post, nil
+	return publicacoes, nil
 }
 
 func (p publicacoes) LikePost(userId uint64, postId uint64) error {

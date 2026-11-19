@@ -129,3 +129,21 @@ func TestN5_CurtirPublicacaoInexistente404(t *testing.T) {
 		decodificar(t, w, &erro)
 	}
 }
+
+// H15: /publicacoes/usuario/{id} devolve TODAS as publicações do usuário, mais recentes primeiro.
+func TestH15_PublicacoesDoUsuarioEUmaLista(t *testing.T) {
+	a := novaAPI(t)
+	aliceID, tokenAlice := a.criarUsuario("alice")
+	_, tokenBob := a.criarUsuario("bob")
+	p1 := a.criarPublicacao(tokenAlice, "primeira")
+	p2 := a.criarPublicacao(tokenAlice, "segunda")
+	a.criarPublicacao(tokenBob, "do bob")
+
+	w := a.req(http.MethodGet, fmt.Sprintf("/publicacoes/usuario/%d", aliceID), "", tokenBob)
+	esperarStatus(t, w, http.StatusOK)
+	var lista []publicacaoResp
+	decodificar(t, w, &lista)
+	if len(lista) != 2 || lista[0].ID != p2 || lista[1].ID != p1 {
+		t.Fatalf("esperado [%d, %d], obtido %s", p2, p1, w.Body.String())
+	}
+}
