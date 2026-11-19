@@ -1,8 +1,63 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type LocationQueryValue, type Router, type RouterHistory } from 'vue-router'
+import { useSessaoStore } from '../stores/sessao'
 import InicioView from '../views/InicioView.vue'
 
-// B0: só a rota inicial. Cadastro, login e a guarda de rotas entram na B1.
-export const router = createRouter({
-  history: createWebHistory(),
-  routes: [{ path: '/', name: 'inicio', component: InicioView }],
-})
+declare module 'vue-router' {
+  interface RouteMeta {
+    /** Só para quem NÃO está logado (entrar, cadastro). As demais exigem sessão. */
+    soVisitante?: boolean
+  }
+}
+
+/**
+ * O `?redirect=` vem da URL, então qualquer um pode montar um link com ele.
+ * Só aceitamos caminhos internos: "//host" e "/\host" o navegador trata como
+ * outro domínio (open redirect).
+ */
+export function destinoSeguro(valor: LocationQueryValue | LocationQueryValue[] | undefined): string {
+  if (typeof valor !== 'string') return '/'
+  if (!valor.startsWith('/') || valor.startsWith('//') || valor.startsWith('/\\')) return '/'
+  return valor
+}
+
+export function criarRouter(history: RouterHistory = createWebHistory()): Router {
+  const router = createRouter({
+    history,
+    routes: [
+      { path: '/', name: 'inicio', component: InicioView },
+      {
+        path: '/entrar',
+        name: 'entrar',
+        component: () => import('../views/LoginView.vue'),
+        meta: { soVisitante: true },
+      },
+      {
+        path: '/cadastro',
+        name: 'cadastro',
+        component: () => import('../views/CadastroView.vue'),
+        meta: { soVisitante: true },
+      },
+      { path: '/:qualquer(.*)*', redirect: '/' },
+    ],
+  })
+
+  router.beforeEach((to) => {
+    const logado = useSessaoStore().estaLogado
+    if (to.meta.soVisitante && logado) return { name: 'inicio' }
+    if (!to.meta.soVisitante && !logado) return { name: 'entrar', query: { redirect: to.fullPath } }
+  })
+
+  return router
+}
+
+/**
+ * Chamado pelo cliente HTTP quando a API recusa o token. Navega por nome para
+ * /entrar: um `push('/')` estando já em "/" é navegação duplicada, a guarda
+ * não roda e a tela ficaria aberta sem sessão.
+ */
+export async function encerrarSessaoExpirada(router: Router) {
+  useSessaoStore().sair()
+  await router.push({ name: 'entrar', query: { redirect: router.currentRoute.value.fullPath } })
+}
+
+export const router = criarRouter()
