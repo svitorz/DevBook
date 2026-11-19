@@ -1,12 +1,14 @@
 package router
 
 import (
+	"api/src/controllers"
 	"api/src/router/routes"
 
 	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 )
 
-func Gerar() *mux.Router {
+func Gerar(db *gorm.DB) *mux.Router {
 	r := mux.NewRouter()
-	return routes.Configurar(r)
+	return routes.Configurar(r, controllers.New(db))
 }

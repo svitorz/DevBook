@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"api/src/auth"
-	"api/src/database"
 	"api/src/models"
 	"api/src/repository"
 	"api/src/responses"
@@ -14,7 +13,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func CriarPublicacao(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) CriarPublicacao(w http.ResponseWriter, r *http.Request) {
 	userId, err := auth.GetUserID(r)
 	if err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
@@ -41,13 +40,7 @@ func CriarPublicacao(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	newPostRespository := repository.NewPostsRepository(db)
+	newPostRespository := repository.NewPostsRepository(c.db)
 	publicacao.ID, err = newPostRespository.Store(publicacao)
 	if err != nil {
 		responses.Err(w, http.StatusBadRequest, err)
@@ -57,7 +50,7 @@ func CriarPublicacao(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusCreated, publicacao)
 }
 
-func BuscarPublicacao(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) BuscarPublicacao(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	postId, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
@@ -65,15 +58,7 @@ func BuscarPublicacao(w http.ResponseWriter, r *http.Request) {
 		responses.Err(w, http.StatusNoContent, err)
 		return
 	}
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer database.Desconectar(db)
-
-	repository := repository.NewPostsRepository(db)
+	repository := repository.NewPostsRepository(c.db)
 	post, err := repository.FindById(postId)
 	if err != nil {
 		responses.Err(w, http.StatusNotFound, err)
@@ -83,21 +68,14 @@ func BuscarPublicacao(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, post)
 }
 
-func BuscarPublicacoes(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) BuscarPublicacoes(w http.ResponseWriter, r *http.Request) {
 	userId, err := auth.GetUserID(r)
 	if err != nil {
 		responses.Err(w, http.StatusUnauthorized, err)
 		return
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer database.Desconectar(db)
-	repository := repository.NewPostsRepository(db)
+	repository := repository.NewPostsRepository(c.db)
 	posts, err := repository.Index(userId)
 	if err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
@@ -107,7 +85,7 @@ func BuscarPublicacoes(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, posts)
 }
 
-func AtualizarPublicacao(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) AtualizarPublicacao(w http.ResponseWriter, r *http.Request) {
 	userId, err := auth.GetUserID(r)
 	if err != nil {
 		responses.Err(w, http.StatusForbidden, err)
@@ -120,15 +98,7 @@ func AtualizarPublicacao(w http.ResponseWriter, r *http.Request) {
 		responses.Err(w, http.StatusNotFound, err)
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer database.Desconectar(db)
-
-	repository := repository.NewPostsRepository(db)
+	repository := repository.NewPostsRepository(c.db)
 	savedPost, err := repository.FindById(postId)
 	if err != nil {
 		responses.Err(w, http.StatusNotFound, err)
@@ -164,7 +134,7 @@ func AtualizarPublicacao(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusNoContent, nil)
 }
 
-func DeletarPublicacao(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) DeletarPublicacao(w http.ResponseWriter, r *http.Request) {
 	userId, err := auth.GetUserID(r)
 	if err != nil {
 		responses.Err(w, http.StatusForbidden, err)
@@ -177,15 +147,7 @@ func DeletarPublicacao(w http.ResponseWriter, r *http.Request) {
 		responses.Err(w, http.StatusNotFound, err)
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer database.Desconectar(db)
-
-	repository := repository.NewPostsRepository(db)
+	repository := repository.NewPostsRepository(c.db)
 	savedPost, err := repository.FindById(postId)
 	if err != nil {
 		responses.Err(w, http.StatusNotFound, err)
@@ -221,7 +183,7 @@ func DeletarPublicacao(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusNoContent, nil)
 }
 
-func BuscarPublicacaoDoUsuario(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) BuscarPublicacaoDoUsuario(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	postId, err := strconv.ParseUint(params["usuarioId"], 10, 64)
@@ -229,15 +191,7 @@ func BuscarPublicacaoDoUsuario(w http.ResponseWriter, r *http.Request) {
 		responses.Err(w, http.StatusNoContent, err)
 		return
 	}
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer database.Desconectar(db)
-
-	repository := repository.NewPostsRepository(db)
+	repository := repository.NewPostsRepository(c.db)
 	post, err := repository.FindByUserId(postId)
 	if err != nil {
 		responses.Err(w, http.StatusNotFound, err)
@@ -247,7 +201,7 @@ func BuscarPublicacaoDoUsuario(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, post)
 }
 
-func CurtirPublicacao(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) CurtirPublicacao(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	userId, err := auth.GetUserID(r)
@@ -262,14 +216,7 @@ func CurtirPublicacao(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer database.Desconectar(db)
-	repository := repository.NewPostsRepository(db)
+	repository := repository.NewPostsRepository(c.db)
 
 	savedPost, err := repository.FindById(postId)
 	if err != nil {
@@ -284,7 +231,7 @@ func CurtirPublicacao(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusNoContent, nil)
 }
 
-func DescurtirPublicacao(w http.ResponseWriter, r *http.Request) {
+func (c *Controllers) DescurtirPublicacao(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	userId, err := auth.GetUserID(r)
@@ -299,14 +246,7 @@ func DescurtirPublicacao(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
-	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	defer database.Desconectar(db)
-	repository := repository.NewPostsRepository(db)
+	repository := repository.NewPostsRepository(c.db)
 
 	savedPost, err := repository.FindById(postId)
 	if err != nil {

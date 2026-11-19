@@ -9,6 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// Conectar abre o pool de conexões e prepara o schema. Deve ser chamada
+// UMA vez no boot; o *gorm.DB retornado é seguro para uso concorrente.
 func Conectar() (*gorm.DB, error) {
 	db, err := gorm.Open(mysql.Open(config.StringConexaoBanco), &gorm.Config{})
 	if err != nil {
@@ -23,19 +25,13 @@ func Conectar() (*gorm.DB, error) {
 		return nil, err
 	}
 	if err := CriarBancoSeNecessario(db); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	if err := CriarTabelas(db); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	return db, nil
-}
-
-func Desconectar(db *gorm.DB) {
-	if sqlDB, err := db.DB(); err == nil {
-		sqlDB.Close()
-	}
 }
 
 func CriarBancoSeNecessario(db *gorm.DB) error {
