@@ -74,10 +74,31 @@ func abrirBancoDeTeste(dsn string) (*gorm.DB, error) {
 	return db, nil
 }
 
-// aplicarSchema prepara as tabelas no banco de teste.
-// TODO(H9/H10): passar a aplicar sql/schema.sql quando o DDL sair do código.
+// aplicarSchema executa sql/schema.sql (a mesma fonte usada pelo compose).
 func aplicarSchema(db *gorm.DB) error {
-	return database.CriarTabelas(db)
+	conteudo, err := os.ReadFile("../../sql/schema.sql")
+	if err != nil {
+		return err
+	}
+	for _, comando := range strings.Split(string(conteudo), ";") {
+		if strings.TrimSpace(semComentarios(comando)) == "" {
+			continue
+		}
+		if err := db.Exec(comando).Error; err != nil {
+			return fmt.Errorf("schema.sql: %w", err)
+		}
+	}
+	return nil
+}
+
+func semComentarios(sql string) string {
+	var linhas []string
+	for _, l := range strings.Split(sql, "\n") {
+		if !strings.HasPrefix(strings.TrimSpace(l), "--") {
+			linhas = append(linhas, l)
+		}
+	}
+	return strings.Join(linhas, "\n")
 }
 
 func precisaBanco(t *testing.T) {

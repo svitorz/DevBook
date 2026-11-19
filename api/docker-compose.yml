@@ -36,6 +36,8 @@ services:
       retries: 20
     volumes:
       - mysql_data:/var/lib/mysql
+      # Aplicado só quando o volume está vazio (primeira subida).
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     restart: always
 
 volumes:
