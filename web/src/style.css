@@ -279,3 +279,34 @@ textarea {
   opacity: 0.6;
   cursor: default;
 }
+
+.titulo-pagina {
+  font-size: 1.2rem;
+  margin: 8px 0 16px;
+}
+
+.voltar {
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.lista-usuarios {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item-usuario {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.item-usuario:hover {
+  border-color: var(--primaria);
+}

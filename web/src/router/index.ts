@@ -44,6 +44,12 @@ export function criarRouter(history: RouterHistory = createWebHistory()): Router
         component: () => import('../views/PerfilView.vue'),
         props: (r) => ({ id: Number(r.params.id) }),
       },
+      {
+        path: '/perfil/:id(\\d+)/:tipo(seguidores|seguindo)',
+        name: 'conexoes',
+        component: () => import('../views/ConexoesView.vue'),
+        props: (r) => ({ id: Number(r.params.id), tipo: r.params.tipo }),
+      },
       { path: '/:qualquer(.*)*', redirect: '/' },
     ],
   })
