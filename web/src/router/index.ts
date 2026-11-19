@@ -37,6 +37,13 @@ export function criarRouter(history: RouterHistory = createWebHistory()): Router
         component: () => import('../views/CadastroView.vue'),
         meta: { soVisitante: true },
       },
+      {
+        // (\\d+): /perfil/abc não casa e cai no redirect abaixo
+        path: '/perfil/:id(\\d+)',
+        name: 'perfil',
+        component: () => import('../views/PerfilView.vue'),
+        props: (r) => ({ id: Number(r.params.id) }),
+      },
       { path: '/:qualquer(.*)*', redirect: '/' },
     ],
   })

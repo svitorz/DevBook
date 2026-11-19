@@ -231,3 +231,51 @@ textarea {
 .botao-texto.perigo {
   color: var(--perigo);
 }
+
+.perfil-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.perfil-nome {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.perfil-topo .dica {
+  margin: 2px 0 0;
+}
+
+.perfil-contagens {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.perfil-contagens a {
+  color: var(--texto-suave);
+  text-decoration: none;
+}
+
+.perfil-contagens a:hover strong,
+.perfil-contagens strong {
+  color: var(--texto);
+}
+
+.botao-secundario {
+  font: inherit;
+  font-weight: 600;
+  color: var(--texto);
+  background: none;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.botao-secundario:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
