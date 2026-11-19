@@ -3,7 +3,7 @@
 > Memória do projeto. Ler ANTES de qualquer coisa ao iniciar sessão ou após compactação.
 
 ## Fase atual
-**Fase 0 — orientação (concluída, aguardando "continuar")**
+**Fase 1 — rede de segurança (concluída, aguardando "continuar")**
 Branch: `chore/api-hardening` (criada a partir de `main@fedaf99`).
 
 ## Baseline
@@ -23,7 +23,7 @@ A análise abaixo é sobre esse código; diferenças do `database/sql` antigo (`
 - [x] Decisão GORM vs database/sql → GORM
 - [x] compose + `.env.example` coerentes, stack sobe (`6c3dfce`)
 - [x] Script de fumaça cobrindo todos os endpoints + resultado atual registrado
-- [ ] Um `*gorm.DB` (pool) criado no boot e injetado
+- [x] Um `*gorm.DB` (pool) criado no boot e injetado (`959dc47`): fumaça idêntica ao baseline; conexões MySQL por execução da fumaça 46 → 0
 
 ### Fase 2 — correções (pendente)
 
@@ -99,10 +99,17 @@ Não cobertos pela fumaça (provar com teste Go na fase 2): H1 (registro duplica
 
 - 2026-11-19 — **Baseline = GORM** (decisão do usuário, contra a minha recomendação de `database/sql`). Motivo registrado: o WIP já compila e está "tidy". Consequências: (1) o "pool no boot" da Fase 1 vira um único `*gorm.DB` criado no `main` e injetado, porque o `*gorm.DB` já encapsula o pool de `*sql.DB`; (2) "não encontrado" precisa ser tratado explicitamente (`First` + `gorm.ErrRecordNotFound` no lugar de `Find+Limit(1)`), o que entra na Fase 2 junto com N7; (3) a regra "não introduza ORM" passa a valer como "não introduza OUTRO ORM nem recursos mágicos do GORM (AutoMigrate, hooks, associations) sem decisão".
 
+- 2026-11-19 — **Infra (Fase 1)**: compose com `name: devbook`, porque o nome padrão `api` colide com containers `api-*` de outro projeto na máquina. Banco publicado em 3310, já que 3306 e 3307 estão ocupados no host. Dentro da rede a API usa `db:3306` fixo. A API escuta na mesma `API_PORT` dentro e fora. Healthcheck no MySQL, para a API só subir com o banco pronto (necessário agora que ela conecta no boot). Removi o volume `.:/app`, que esconderia o binário. A falta de `.env` virou aviso em vez de `log.Fatal`. Descartado: manter o `.env` dentro da imagem, porque vaza segredo e não é assim que o compose injeta variáveis.
+- 2026-11-19 — **Pool por injeção, não global**. Os handlers viraram métodos de `controllers.Controllers{db}`, e as rotas viraram funções `rotasX(c)`. Alternativa descartada: `var DB *gorm.DB` global no pacote `database`. Seria um diff menor (só troca o `Conectar()` por `database.DB`), mas cria estado global: os testes não conseguem trocar o banco sem mutar um global compartilhado, o que impede `t.Parallel()`, e a dependência fica escondida. Custo da escolha: assinatura nova em todos os handlers e um diff mecânico maior. Não configurei `SetMaxOpenConns` e afins: os defaults bastam para um projeto de estudo.
+- 2026-11-19 — **Efeitos colaterais da refatoração** (inevitáveis, porque o código removido era o próprio bug): (1) em `BuscarUsuarios`, o nil-deref quando `Conectar` falhava (parte do H4) deixou de existir; (2) o vazamento de pool no `CriarPublicacao` (parte do H2) deixou de existir. Nenhum dos dois era observável pela fumaça. O primeiro só acontecia com o banco fora do ar; a prova do segundo é a contagem de conexões acima. Agora uma falha de banco no boot dá `log.Fatal` com a mensagem, e não durante uma requisição.
+- 2026-11-19 — Script de fumaça: o esperado de cada item é o contrato-alvo, e cada item isola um bug. Na primeira versão do script, o H2 contaminava os testes de ownership e eu tinha errado a direção do follow. Corrigi antes de registrar o baseline.
+
 ## Contrato da API (mudanças)
 _Nenhuma ainda._
 
 ## Achados fora de escopo
+- **N14** (baixa): a resposta do `POST /publicacoes` mostra `criadaEm: 0001-01-01`. O default fica no banco e não volta para a struct (o mesmo vale para `criadoem` do usuário).
+- `atualizar-senha` não valida as regras de força da senha nova (o cadastro valida).
 - `io/ioutil` depreciado (cosmético).
 - Token é parseado duas vezes por request (middleware + `GetUserID`); `getToken` não checa o esquema `Bearer`.
 - Chave JSON inconsistente: `criadoem` (usuário) vs `criadaEm` (publicação).
@@ -112,4 +119,4 @@ _Nenhuma ainda._
 _(nada ainda)_
 
 ## Próximo passo
-Usuário escreve "continuar" → Fase 1, passo 1: subir o stack com compose + `.env.example` coerentes.
+Usuário escreve "continuar" → Fase 2. Antes de codar, confirmar com o usuário: (a) os itens `[contrato]` da fumaça; (b) a estratégia dos testes Go (integração contra um banco `devbook_test` no MySQL do compose, ou outra); (c) o schema em `schema.sql` via `docker-entrypoint-initdb.d` ou em código. Depois, começar pelo H1 (teste primeiro).
