@@ -68,3 +68,8 @@ async function mensagemDeErro(resposta: Response): Promise<string> {
   }
   return `Erro ${resposta.status}`
 }
+
+/** Texto para mostrar ao usuário. A API já manda mensagens legíveis (e 5xx genérico). */
+export function textoDoErro(e: unknown): string {
+  return e instanceof ApiError ? e.message : 'Erro inesperado. Tente de novo.'
+}

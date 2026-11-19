@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, SEM_CONEXAO, configurarCliente, request } from './client'
+import { ApiError, SEM_CONEXAO, configurarCliente, request, textoDoErro } from './client'
 
 function respostaJson(status: number, corpo?: unknown) {
   return new Response(corpo === undefined ? null : JSON.stringify(corpo), {
@@ -82,5 +82,12 @@ describe('request', () => {
 
     await expect(request('POST', '/login', {})).rejects.toMatchObject({ status: 401 })
     expect(aoExpirarSessao).not.toHaveBeenCalled()
+  })
+})
+
+describe('textoDoErro', () => {
+  it('usa a mensagem do ApiError e um texto genérico para o resto', () => {
+    expect(textoDoErro(new ApiError(409, 'nick ou e-mail já está em uso'))).toBe('nick ou e-mail já está em uso')
+    expect(textoDoErro(new Error('detalhe interno'))).toBe('Erro inesperado. Tente de novo.')
   })
 })
