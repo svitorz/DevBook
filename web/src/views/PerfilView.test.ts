@@ -50,8 +50,8 @@ describe('PerfilView', () => {
     expect(wrapper.text()).toContain('Nome 9')
     expect(wrapper.text()).toContain('@u9')
     expect(wrapper.text()).not.toContain('u9@x.test')
-    expect(wrapper.get('a[href="/perfil/9/seguidores"]').text()).toContain('1')
-    expect(wrapper.get('a[href="/perfil/9/seguindo"]').text()).toContain('2')
+    expect(wrapper.get('a[href="/perfil/9/seguidores"]').text()).toBe('1 seguidor') // singular
+    expect(wrapper.get('a[href="/perfil/9/seguindo"]').text()).toBe('2 seguindo')
     expect(wrapper.findAll('article')).toHaveLength(1)
     expect(publicacoesApi.doUsuario).toHaveBeenCalledWith(9)
   })

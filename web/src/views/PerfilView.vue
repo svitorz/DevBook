@@ -90,7 +90,7 @@ watch(() => props.id, carregar, { immediate: true })
           >{{ euSigo ? 'Deixar de seguir' : 'Seguir' }}</button>
         </div>
         <nav class="perfil-contagens" aria-label="Conexões">
-          <RouterLink :to="`/perfil/${usuario.id}/seguidores`"><strong>{{ seguidores.length }}</strong> seguidores</RouterLink>
+          <RouterLink :to="`/perfil/${usuario.id}/seguidores`"><strong>{{ seguidores.length }}</strong> {{ seguidores.length === 1 ? 'seguidor' : 'seguidores' }}</RouterLink>
           <RouterLink :to="`/perfil/${usuario.id}/seguindo`"><strong>{{ seguindo.length }}</strong> seguindo</RouterLink>
         </nav>
         <p v-if="erroSeguir" class="erro" role="alert">{{ erroSeguir }}</p>
