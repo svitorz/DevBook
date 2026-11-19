@@ -6,6 +6,7 @@ import (
 	"api/src/repository"
 	"api/src/responses"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -94,17 +95,19 @@ func (c *Controllers) AtualizarPublicacao(w http.ResponseWriter, r *http.Request
 	params := mux.Vars(r)
 	postId, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responses.Err(w, http.StatusBadRequest, err)
+		return
 	}
 
 	repository := repository.NewPostsRepository(c.db)
 	savedPost, err := repository.FindById(postId)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responderErroDeBusca(w, err)
+		return
 	}
 
 	if savedPost.AutorID != userId {
-		responses.Err(w, http.StatusForbidden, err)
+		responses.Err(w, http.StatusForbidden, errors.New("não é possível alterar uma publicação de outro usuário"))
 		return
 	}
 
@@ -143,34 +146,19 @@ func (c *Controllers) DeletarPublicacao(w http.ResponseWriter, r *http.Request) 
 	params := mux.Vars(r)
 	postId, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responses.Err(w, http.StatusBadRequest, err)
+		return
 	}
 
 	repository := repository.NewPostsRepository(c.db)
 	savedPost, err := repository.FindById(postId)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responderErroDeBusca(w, err)
+		return
 	}
 
 	if savedPost.AutorID != userId {
-		responses.Err(w, http.StatusForbidden, err)
-		return
-	}
-
-	request, err := io.ReadAll(r.Body)
-	if err != nil {
-		responses.Err(w, http.StatusBadRequest, err)
-		return
-	}
-
-	var post models.Publicacao
-	if err = json.Unmarshal(request, &post); err != nil {
-		responses.Err(w, http.StatusBadRequest, err)
-		return
-	}
-
-	if err = post.Preparar(); err != nil {
-		responses.Err(w, http.StatusUnauthorized, err)
+		responses.Err(w, http.StatusForbidden, errors.New("não é possível alterar uma publicação de outro usuário"))
 		return
 	}
 
