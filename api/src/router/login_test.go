@@ -41,3 +41,20 @@ func TestH14_LoginRespondeJSONComToken(t *testing.T) {
 
 	esperarStatus(t, a.req(http.MethodGet, "/publicacoes", "", corpo.Token), http.StatusOK)
 }
+
+// Fase B: o login devolve também o id do usuário, que o front usa para saber quem está logado.
+func TestLoginDevolveIDDoUsuario(t *testing.T) {
+	a := novaAPI(t)
+	id, _ := a.criarUsuario("alice")
+
+	w := a.req(http.MethodPost, "/login", `{"email":"alice@devbook.test","senha":"`+senhaValida+`"}`, "")
+	esperarStatus(t, w, http.StatusOK)
+	var corpo struct {
+		ID    uint64 `json:"id"`
+		Token string `json:"token"`
+	}
+	decodificar(t, w, &corpo)
+	if corpo.ID != id || corpo.Token == "" {
+		t.Fatalf("esperado id %d e token, obtido %s", id, w.Body.String())
+	}
+}

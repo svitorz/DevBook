@@ -3,8 +3,21 @@
 > Memória do projeto. Ler ANTES de qualquer coisa ao iniciar sessão ou após compactação.
 
 ## Fase atual
-**Fase 2 — correções da API (concluída, aguardando "continuar")**
-Branch: `chore/api-hardening` (fases 0–1 mergeadas no `main` via PR #1, `dbb1e25`; branch avançada em fast-forward).
+**Fase B0 — fundação do front (em andamento)**
+Branch: `feat/web-vue` (criada de `main@5572166`; a fase A inteira foi mergeada via PR #1 e PR #2).
+
+### Decisões da Fase B (confirmadas pelo usuário em 2026-11-19)
+1. **Stack:** Vite + Vue 3 (`<script setup>`) + TypeScript, vue-router, pinia, `fetch` nativo num cliente pequeno (sem axios), CSS próprio simples e Vitest. O dev server roda no host (`npm run dev`), fora do compose.
+2. **Token:** fica no `localStorage`. Trade-off aceito: é legível por JS em caso de XSS. Mitigação: Vue escapa HTML por padrão e o projeto não usa `v-html`.
+3. **Usuário logado:** o login da API passa a devolver `{"id", "token"}` (mudança aditiva).
+4. **Escopo:** MVP completo, cobrindo todos os endpoints, em subfases com parada a cada uma:
+   - B0: fundação (scaffold, cliente, sessão, testes, `id` no login)
+   - B1: cadastro, login, logout e guarda de rotas
+   - B2: feed (criar, editar e excluir post; curtir)
+   - B3: perfil e social (posts do usuário, seguir/parar, seguidores/seguindo, busca)
+   - B4: minha conta (editar perfil, trocar senha, excluir conta)
+
+### Fase A — correções da API (concluída)
 
 ### Decisões da Fase 2 (confirmadas pelo usuário em 2026-11-19)
 1. **Contrato:** todos os itens `[contrato]` da fumaça foram aprovados como estão: 409 para duplicado; login devolve `{"token"}`; 400 para validação; curtir 2x é idempotente (204); senha atual errada dá 401; CORS liberado para `http://localhost:5173`.
@@ -147,7 +160,7 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 | Endpoint | Antes | Agora |
 |---|---|---|
 | `GET /usuario/{id}` | singular | **`GET /usuarios/{id}`**; a rota singular foi removida |
-| `POST /login` | token em texto puro | `200 {"token": "..."}`, `application/json` |
+| `POST /login` | token em texto puro | `200 {"id": 1, "token": "..."}`, `application/json` (o `id` foi adicionado na fase B0) |
 | `POST /login` com falha | mensagem do bcrypt (vazava se o e-mail existe) | `401 {"erro":"e-mail ou senha inválidos"}` |
 | `POST /usuarios` | resposta incluía `senha` (hash) | sem `senha`; duplicado → **409** |
 | `PUT /usuarios/{id}` | exigia senha; 200 `null` | sem senha; **204**; nick/e-mail de outro → 409 |

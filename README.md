@@ -81,7 +81,7 @@ Tudo é JSON. Erros vêm como `{"erro": "..."}`. Status: 400 entrada inválida, 
 | Método | Rota | Auth | Sucesso |
 |---|---|---|---|
 | POST | `/usuarios` | — | 201 usuário (sem senha) |
-| POST | `/login` | — | 200 `{"token": "..."}` |
+| POST | `/login` | — | 200 `{"id": 1, "token": "..."}` |
 | GET | `/usuarios?usuario=<nome ou nick>` | ✔ | 200 lista |
 | GET | `/usuarios/{id}` | ✔ | 200 usuário |
 | PUT | `/usuarios/{id}` | ✔ (dono) | 204 (`nome`, `nick`, `email`) |
