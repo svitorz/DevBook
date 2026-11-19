@@ -26,7 +26,8 @@ export const usuariosApi = {
   seguidores: (id: number) => request<Usuario[]>('GET', `${u(id)}/seguidores`),
   seguindo: (id: number) => request<Usuario[]>('GET', `${u(id)}/seguindo`),
   atualizarSenha: (id: number, atual: string, nova: string) =>
-    request<void>('POST', `${u(id)}/atualizar-senha`, { atual, nova }),
+    // 401 aqui = senha atual errada, não sessão expirada
+    request<void>('POST', `${u(id)}/atualizar-senha`, { atual, nova }, { ignorar401DeSessao: true }),
 }
 
 export const publicacoesApi = {

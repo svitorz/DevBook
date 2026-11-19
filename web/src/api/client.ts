@@ -32,7 +32,15 @@ export function configurarCliente(novo: ConfigCliente) {
   config = novo
 }
 
-export async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+export interface OpcoesRequest {
+  /**
+   * O 401 deste endpoint NÃO significa token inválido (ex.: senha atual
+   * errada no atualizar-senha). Não encerra a sessão.
+   */
+  ignorar401DeSessao?: boolean
+}
+
+export async function request<T>(method: string, path: string, body?: unknown, opcoes: OpcoesRequest = {}): Promise<T> {
   const headers: Record<string, string> = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
 
@@ -51,7 +59,7 @@ export async function request<T>(method: string, path: string, body?: unknown): 
   }
 
   if (!resposta.ok) {
-    if (resposta.status === 401 && token) config.aoExpirarSessao()
+    if (resposta.status === 401 && token && !opcoes.ignorar401DeSessao) config.aoExpirarSessao()
     throw new ApiError(resposta.status, await mensagemDeErro(resposta))
   }
 
