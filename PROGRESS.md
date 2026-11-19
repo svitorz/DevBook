@@ -38,7 +38,29 @@ A análise abaixo é sobre esse código; diferenças do `database/sql` antigo (`
 - [x] Script de fumaça cobrindo todos os endpoints + resultado atual registrado
 - [x] Um `*gorm.DB` (pool) criado no boot e injetado (`959dc47`): fumaça idêntica ao baseline; conexões MySQL por execução da fumaça 46 → 0
 
-### Fase 2 — correções (pendente)
+### Fase 2 — correções
+Cada item tem um teste que falhava antes da correção e passa depois (`go test ./...` com `TEST_DB_DSN`).
+- [x] Infra de testes de integração (`97fa8be`)
+- [x] H1 rota registrada uma vez + Logger em todas (`9c3284e`)
+- [x] H2 autor vem do token (`0163e5b`)
+- [x] N7 busca por id inexistente → 404 (`b4741bc`), pré-requisito do H3
+- [x] H3 + N3 ownership sem panic; DELETE sem corpo (`5029705`)
+- [x] H4 auto-follow para no 403 (`0ed9e2e`)
+- [x] H5 — sem mudança: no GORM o erro já é propagado; o "não encontrado" foi resolvido no N7
+- [x] H6 DELETE /usuarios autenticado (`14e6b16` levou só o teste por erro meu de encadeamento de comandos; a correção está em `4266df2`)
+- [x] H7 boot falha sem SECRET_KEY (`96076d6`) + JWT v5 isolado (`84022bf`)
+- [x] H8 PUT de perfil sem senha (`547ff06`)
+- [x] N1 cadastro não expõe hash (`d94cdf6`)
+- [x] N2 login sem enumeração de e-mail (`31f558e`)
+- [x] N4 JOIN do /seguindo (`ad15b6d`)
+- [x] N5 curtir idempotente + 404 (`35fd40b`)
+- [ ] H9/H10 schema.sql no initdb; app sem DDL; DB_NAME respeitado
+- [ ] H11 resto (README) / H12 go mod tidy
+- [ ] H13 rota /usuarios/{id}
+- [ ] H14 status HTTP padronizados + login JSON + 409
+- [ ] H15 publicações do usuário como lista
+- [ ] H16 CORS
+- [ ] Fumaça final
 
 ## Hipóteses — status verificado (Fase 0)
 | # | Status | Evidência |
