@@ -69,7 +69,7 @@ func (c *Controllers) BuscarUsuario(w http.ResponseWriter, r *http.Request) {
 	repository := repository.NewUsersRepository(c.db)
 	user, err := repository.Show(userID)
 	if err != nil {
-		responses.Err(w, http.StatusInternalServerError, err)
+		responderErroDeBusca(w, err)
 		return
 	}
 

@@ -35,3 +35,12 @@ func TestH2_AutorIDDoCorpoEIgnorado(t *testing.T) {
 		t.Fatalf("banco: autor_id = %d, esperado %d (alice)", autorNoBanco, aliceID)
 	}
 }
+
+// N7: recurso inexistente responde 404, não 200 com objeto zerado.
+func TestN7_PublicacaoInexistente404(t *testing.T) {
+	a := novaAPI(t)
+	_, token := a.criarUsuario("alice")
+
+	w := a.req(http.MethodGet, "/publicacoes/999999", "", token)
+	esperarStatus(t, w, http.StatusNotFound)
+}

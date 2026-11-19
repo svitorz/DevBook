@@ -31,17 +31,14 @@ func (p publicacoes) FindById(publicacaoID uint64) (models.Publicacao, error) {
 		Select(colunasPublicacao).
 		Joins("INNER JOIN USUARIOS ON USUARIOS.id = PUBLICACOES.autor_id").
 		Where("PUBLICACOES.id = ?", publicacaoID).
-		Limit(1).
-		Find(&post).Error; err != nil {
-		return models.Publicacao{}, err
+		Take(&post).Error; err != nil {
+		return models.Publicacao{}, err // gorm.ErrRecordNotFound se não existir
 	}
 
-	if post.ID != 0 {
-		var err error
-		post.Curtidas, err = p.getLikes(post.ID)
-		if err != nil {
-			return models.Publicacao{}, err
-		}
+	var err error
+	post.Curtidas, err = p.getLikes(post.ID)
+	if err != nil {
+		return models.Publicacao{}, err
 	}
 
 	return post, nil

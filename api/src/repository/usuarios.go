@@ -47,9 +47,8 @@ func (u usuarios) Show(ID uint64) (models.Usuario, error) {
 	if err := u.db.
 		Select(colunasUsuario).
 		Where("USUARIOS.id = ?", ID).
-		Limit(1).
-		Find(&usuario).Error; err != nil {
-		return models.Usuario{}, err
+		Take(&usuario).Error; err != nil {
+		return models.Usuario{}, err // gorm.ErrRecordNotFound se não existir
 	}
 
 	return usuario, nil

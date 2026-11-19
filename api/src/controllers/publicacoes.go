@@ -60,7 +60,7 @@ func (c *Controllers) BuscarPublicacao(w http.ResponseWriter, r *http.Request) {
 	repository := repository.NewPostsRepository(c.db)
 	post, err := repository.FindById(postId)
 	if err != nil {
-		responses.Err(w, http.StatusNotFound, err)
+		responderErroDeBusca(w, err)
 		return
 	}
 
