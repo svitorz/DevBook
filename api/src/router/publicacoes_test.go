@@ -147,3 +147,56 @@ func TestH15_PublicacoesDoUsuarioEUmaLista(t *testing.T) {
 		t.Fatalf("esperado [%d, %d], obtido %s", p2, p1, w.Body.String())
 	}
 }
+
+// B2: toda resposta de publicação diz se o usuário do token curtiu (`curtiu`),
+// para o front saber se mostra "Curtir" ou "Descurtir" depois de recarregar.
+func TestB2_CurtiuIndicaSeOUsuarioDoTokenCurtiu(t *testing.T) {
+	a := novaAPI(t)
+	aliceID, tokenAlice := a.criarUsuario("alice")
+	_, tokenBob := a.criarUsuario("bob")
+	postID := a.criarPublicacao(tokenAlice, "post")
+	path := fmt.Sprintf("/publicacoes/%d", postID)
+	esperarStatus(t, a.req(http.MethodPost, fmt.Sprintf("/usuarios/%d/seguir", aliceID), "", tokenBob), http.StatusNoContent)
+	esperarStatus(t, a.req(http.MethodPost, path+"/curtir", "", tokenBob), http.StatusNoContent)
+
+	type resp struct {
+		ID       uint64 `json:"id"`
+		Curtidas uint64 `json:"curtidas"`
+		Curtiu   *bool  `json:"curtiu"` // ponteiro: campo ausente ≠ false
+	}
+	conferir := func(rota, token string, lista bool, querCurtiu bool) {
+		t.Helper()
+		w := a.req(http.MethodGet, rota, "", token)
+		esperarStatus(t, w, http.StatusOK)
+		var p resp
+		if lista {
+			var l []resp
+			decodificar(t, w, &l)
+			if len(l) != 1 {
+				t.Fatalf("%s: esperado 1 publicação, obtido %s", rota, w.Body.String())
+			}
+			p = l[0]
+		} else {
+			decodificar(t, w, &p)
+		}
+		if p.Curtiu == nil || *p.Curtiu != querCurtiu || p.Curtidas != 1 {
+			t.Fatalf("%s: esperado curtiu=%v e curtidas=1, obtido %s", rota, querCurtiu, w.Body.String())
+		}
+	}
+
+	doUsuario := fmt.Sprintf("/publicacoes/usuario/%d", aliceID)
+	for _, c := range []struct {
+		rota  string
+		lista bool
+	}{{"/publicacoes", true}, {path, false}, {doUsuario, true}} {
+		conferir(c.rota, tokenBob, c.lista, true)    // bob curtiu
+		conferir(c.rota, tokenAlice, c.lista, false) // a mesma publicação, vista pela alice
+	}
+
+	esperarStatus(t, a.req(http.MethodPost, path+"/descurtir", "", tokenBob), http.StatusNoContent)
+	var p resp
+	decodificar(t, a.req(http.MethodGet, path, "", tokenBob), &p)
+	if p.Curtiu == nil || *p.Curtiu || p.Curtidas != 0 {
+		t.Fatalf("depois de descurtir: esperado curtiu=false e curtidas=0, obtido %+v", p)
+	}
+}

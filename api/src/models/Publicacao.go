@@ -12,7 +12,8 @@ type Publicacao struct {
 	Conteudo  string    `json:"conteudo,omitempty" gorm:"column:conteudo"` // max 300
 	AutorID   uint64    `json:"autor_id,omitempty" gorm:"column:autor_id"`
 	AutorNick string    `json:"autor_nick,omitempty" gorm:"->"`
-	Curtidas  uint64    `json:"curtidas" gorm:"-"`
+	Curtidas  uint64    `json:"curtidas" gorm:"->"` // calculado no SELECT (só leitura)
+	Curtiu    bool      `json:"curtiu" gorm:"->"`   // o usuário do token curtiu? (calculado no SELECT)
 	CriadaEm  time.Time `json:"criadaEm" gorm:"column:criadaEm;default:CURRENT_TIMESTAMP"`
 }
 

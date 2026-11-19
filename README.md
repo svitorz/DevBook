@@ -115,7 +115,7 @@ npm run build   # checagem de tipos + build de produção em web/dist
 
 ## 🧪 Endpoints
 
-Tudo é JSON. Erros vêm como `{"erro": "..."}`. Status: 400 entrada inválida, 401 token ausente/inválido, 403 sem permissão, 404 não encontrado, 409 nick/e-mail duplicado.
+Tudo é JSON. Erros vêm como `{"erro": "..."}`. Toda publicação devolvida traz `curtidas` (total) e `curtiu` (se o usuário do token curtiu). Status: 400 entrada inválida, 401 token ausente/inválido, 403 sem permissão, 404 não encontrado, 409 nick/e-mail duplicado.
 
 | Método | Rota | Auth | Sucesso |
 |---|---|---|---|

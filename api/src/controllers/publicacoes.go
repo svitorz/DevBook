@@ -51,6 +51,12 @@ func (c *Controllers) CriarPublicacao(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controllers) BuscarPublicacao(w http.ResponseWriter, r *http.Request) {
+	userId, err := auth.GetUserID(r)
+	if err != nil {
+		responses.Err(w, http.StatusUnauthorized, err)
+		return
+	}
+
 	params := mux.Vars(r)
 
 	postId, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
@@ -59,7 +65,7 @@ func (c *Controllers) BuscarPublicacao(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	repository := repository.NewPostsRepository(c.db)
-	post, err := repository.FindById(postId)
+	post, err := repository.FindById(postId, userId)
 	if err != nil {
 		responderErroDeBusca(w, err)
 		return
@@ -100,7 +106,7 @@ func (c *Controllers) AtualizarPublicacao(w http.ResponseWriter, r *http.Request
 	}
 
 	repository := repository.NewPostsRepository(c.db)
-	savedPost, err := repository.FindById(postId)
+	savedPost, err := repository.FindById(postId, userId)
 	if err != nil {
 		responderErroDeBusca(w, err)
 		return
@@ -151,7 +157,7 @@ func (c *Controllers) DeletarPublicacao(w http.ResponseWriter, r *http.Request) 
 	}
 
 	repository := repository.NewPostsRepository(c.db)
-	savedPost, err := repository.FindById(postId)
+	savedPost, err := repository.FindById(postId, userId)
 	if err != nil {
 		responderErroDeBusca(w, err)
 		return
@@ -171,6 +177,12 @@ func (c *Controllers) DeletarPublicacao(w http.ResponseWriter, r *http.Request) 
 }
 
 func (c *Controllers) BuscarPublicacaoDoUsuario(w http.ResponseWriter, r *http.Request) {
+	userId, err := auth.GetUserID(r)
+	if err != nil {
+		responses.Err(w, http.StatusUnauthorized, err)
+		return
+	}
+
 	params := mux.Vars(r)
 
 	usuarioId, err := strconv.ParseUint(params["usuarioId"], 10, 64)
@@ -179,7 +191,7 @@ func (c *Controllers) BuscarPublicacaoDoUsuario(w http.ResponseWriter, r *http.R
 		return
 	}
 	repository := repository.NewPostsRepository(c.db)
-	publicacoes, err := repository.FindByUserId(usuarioId)
+	publicacoes, err := repository.FindByUserId(usuarioId, userId)
 	if err != nil {
 		responses.Err(w, http.StatusInternalServerError, err)
 		return
@@ -205,7 +217,7 @@ func (c *Controllers) CurtirPublicacao(w http.ResponseWriter, r *http.Request) {
 
 	repository := repository.NewPostsRepository(c.db)
 
-	savedPost, err := repository.FindById(postId)
+	savedPost, err := repository.FindById(postId, userId)
 	if err != nil {
 		responderErroDeBusca(w, err)
 		return
@@ -236,7 +248,7 @@ func (c *Controllers) DescurtirPublicacao(w http.ResponseWriter, r *http.Request
 
 	repository := repository.NewPostsRepository(c.db)
 
-	savedPost, err := repository.FindById(postId)
+	savedPost, err := repository.FindById(postId, userId)
 	if err != nil {
 		responderErroDeBusca(w, err)
 		return
