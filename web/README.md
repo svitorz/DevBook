@@ -28,7 +28,20 @@ No container (`Dockerfile`), o build usa `VITE_API_URL=/api` e o nginx encaminha
 
 ## Estrutura
 
-- `src/api/client.ts`: `fetch` com JSON, token e `ApiError` (`status` + mensagem do `{"erro"}` da API)
+- `src/api/client.ts`: `fetch` com JSON, token e `ApiError` (`status` + mensagem do `{"erro"}` da API); um 401 com token encerra a sessão, exceto onde o endpoint pede o contrário (`atualizar-senha`)
 - `src/api/endpoints.ts`: uma função por endpoint; as views não montam URL
 - `src/api/types.ts`: tipos do contrato (`Usuario`, `Publicacao`, `Sessao`)
 - `src/stores/sessao.ts`: token + id do usuário, persistidos no `localStorage`
+- `src/router/index.ts`: rotas e guarda (toda rota exige sessão, exceto as `soVisitante`) e `?redirect=` seguro
+- `src/composables/useListaDePublicacoes.ts`: estado e ações de uma lista de publicações (feed e perfil)
+- `src/views/`: `Login`, `Cadastro`, `Inicio` (feed), `Perfil`, `Conexoes` (seguidores/seguindo), `Busca`, `Conta`
+- `src/components/`: cabeçalho, formulário e cartão de publicação, lista de usuários e as seções de `conta/`
+
+| Rota | Tela |
+|---|---|
+| `/entrar`, `/cadastro` | login e cadastro (só deslogado) |
+| `/` | feed: publicar, editar, excluir, curtir |
+| `/perfil/:id` | perfil, seguir/deixar de seguir, publicações |
+| `/perfil/:id/seguidores`, `/perfil/:id/seguindo` | conexões |
+| `/buscar?q=` | busca por nome ou nick |
+| `/conta` | editar perfil, trocar senha, excluir conta |
