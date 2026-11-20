@@ -5,6 +5,7 @@ import { ApiError, textoDoErro } from '../api/client'
 import { publicacoesApi, usuariosApi } from '../api/endpoints'
 import type { Usuario } from '../api/types'
 import CartaoPublicacao from '../components/CartaoPublicacao.vue'
+import EsqueletoPublicacao from '../components/EsqueletoPublicacao.vue'
 import { useListaDePublicacoes } from '../composables/useListaDePublicacoes'
 import { useSessaoStore } from '../stores/sessao'
 
@@ -68,7 +69,10 @@ watch(() => props.id, carregar, { immediate: true })
 
 <template>
   <main class="container">
-    <p v-if="carregando && !usuario" class="dica">Carregando…</p>
+    <div v-if="carregando && !usuario" aria-busy="true">
+      <p class="visualmente-oculto">Carregando perfil…</p>
+      <div class="feed"><EsqueletoPublicacao v-for="n in 2" :key="n" /></div>
+    </div>
     <div v-else-if="erro" class="cartao" role="alert">
       <p class="erro">{{ erro }}</p>
       <RouterLink to="/">Voltar ao feed</RouterLink>

@@ -8,7 +8,7 @@ import { criarRouter } from '../router'
 import { useSessaoStore } from '../stores/sessao'
 import CabecalhoApp from './CabecalhoApp.vue'
 
-const EU: Usuario = { id: 1, nome: 'Ana Lima', nick: 'ana', email: 'ana@x.test', criadoem: '2026-01-15T12:00:00Z' }
+const EU: Usuario = { id: 1, nome: 'Ana Lima', nick: 'ana_lima', email: 'ana@x.test', criadoem: '2026-01-15T12:00:00Z' }
 
 async function montar(url = '/') {
   const router = criarRouter(createMemoryHistory())
@@ -105,7 +105,7 @@ describe('CabecalhoApp: menu da conta', () => {
   const botao = '[data-testid=menu-conta]'
   const painel = '#menu-conta'
 
-  it('o botão mostra as iniciais e começa fechado', async () => {
+  it('o botão mostra as iniciais do nick (como nos cartões) e começa fechado', async () => {
     const { wrapper } = await montarLogado()
     expect(usuariosApi.obter).toHaveBeenCalledWith(1)
     expect(wrapper.get(botao).text()).toBe('AL')
@@ -120,7 +120,7 @@ describe('CabecalhoApp: menu da conta', () => {
 
     expect(wrapper.get(botao).attributes('aria-expanded')).toBe('true')
     expect(wrapper.get(painel).text()).toContain('Ana Lima')
-    expect(wrapper.get(painel).text()).toContain('@ana')
+    expect(wrapper.get(painel).text()).toContain('@ana_lima')
     expect(wrapper.get(`${painel} a[href="/conta"]`).text()).toBe('Minha conta')
     expect(wrapper.get(`${painel} [data-testid=sair]`).text()).toBe('Sair')
   })

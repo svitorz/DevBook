@@ -1,4 +1,6 @@
 // Avatar sem foto (a API não tem upload): iniciais + uma cor fixa por pessoa.
+// Tudo sai do NICK, porque a publicação só traz o nick (não o nome) e a mesma
+// pessoa precisa ter o mesmo avatar no cabeçalho, nos cartões e no perfil.
 
 // Todas com contraste ≥ 5:1 contra texto branco, nos dois temas.
 export const CORES_AVATAR = [
@@ -12,9 +14,9 @@ export const CORES_AVATAR = [
   '#a21caf',
 ] as const
 
-/** "Ana Maria de Souza" → "AS"; "ana" → "A"; vazio → "?". */
-export function iniciais(nome: string): string {
-  const partes = nome.trim().split(/\s+/).filter(Boolean)
+/** "c0_visual" → "CV"; "ana_maria_souza" → "AS"; "ana" → "A"; vazio → "?". */
+export function iniciais(nick: string): string {
+  const partes = nick.split(/[\s._-]+/).filter(Boolean)
   if (partes.length === 0) return '?'
   const primeira = [...partes[0]][0]
   const ultima = partes.length > 1 ? [...partes[partes.length - 1]][0] : ''

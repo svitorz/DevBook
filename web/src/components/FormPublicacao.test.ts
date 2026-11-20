@@ -13,16 +13,24 @@ async function preencher(w: ReturnType<typeof montar>, titulo: string, conteudo:
 }
 
 describe('FormPublicacao', () => {
-  it('envia título e conteúdo sem espaços nas pontas e limpa quando pedido', async () => {
+  it('envia título e conteúdo sem espaços nas pontas', async () => {
     const aoSalvar = vi.fn().mockResolvedValue(undefined)
-    const w = montar({ aoSalvar, limparAoSalvar: true })
+    const w = montar({ aoSalvar })
     await preencher(w, '  Olá  ', '  mundo ')
 
     await w.get('form').trigger('submit')
     await flushPromises()
 
     expect(aoSalvar).toHaveBeenCalledWith({ titulo: 'Olá', conteudo: 'mundo' })
-    expect((w.get('input[name=titulo]').element as HTMLInputElement).value).toBe('')
+  })
+
+  it('focarTitulo põe o cursor no título ao montar (edição no cartão)', () => {
+    const w = mount(FormPublicacao, {
+      attachTo: document.body,
+      props: { rotulo: 'Salvar', aoSalvar: vi.fn(), focarTitulo: true },
+    })
+    expect(document.activeElement).toBe(w.get('input[name=titulo]').element)
+    w.unmount()
   })
 
   it('erro da API aparece e o texto digitado fica', async () => {

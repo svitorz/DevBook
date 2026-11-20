@@ -136,13 +136,13 @@ describe('Minha conta: excluir conta', () => {
 })
 
 describe('cabeçalho', () => {
-  it('salvar o perfil atualiza o nome no menu da conta', async () => {
+  it('salvar o perfil atualiza o menu da conta (avatar sai do nick)', async () => {
     vi.spyOn(usuariosApi, 'atualizar').mockResolvedValue(undefined)
     const { wrapper } = await abrir()
-    expect(wrapper.get('[data-testid=menu-conta]').text()).toBe('AL')
+    expect(wrapper.get('[data-testid=menu-conta]').text()).toBe('A') // nick "ana"
 
-    vi.mocked(usuariosApi.obter).mockResolvedValue({ ...EU, nome: 'Bia Souza' })
-    await wrapper.get('[data-testid=form-perfil] input[name=nome]').setValue('Bia Souza')
+    vi.mocked(usuariosApi.obter).mockResolvedValue({ ...EU, nick: 'bia_souza' })
+    await wrapper.get('[data-testid=form-perfil] input[name=nick]').setValue('bia_souza')
     await wrapper.get('[data-testid=form-perfil]').trigger('submit')
     await flushPromises()
 

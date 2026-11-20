@@ -1,25 +1,30 @@
 import { describe, expect, it } from 'vitest'
 import { CORES_AVATAR, corDoAvatar, iniciais } from './avatar'
 
+// Sempre a partir do NICK: a publicação só traz o nick (não o nome), e a mesma
+// pessoa precisa ter o mesmo avatar no cabeçalho, nos cartões e no perfil.
 describe('iniciais', () => {
-  it('duas palavras: primeira letra de cada, em maiúscula', () => {
-    expect(iniciais('ana lima')).toBe('AL')
+  it('nick com separador: primeira letra das partes, em maiúscula', () => {
+    expect(iniciais('c0_visual')).toBe('CV')
+    expect(iniciais('ana.lima')).toBe('AL')
+    expect(iniciais('joao-silva')).toBe('JS')
   })
 
-  it('mais de duas palavras: primeira e última', () => {
-    expect(iniciais('Ana Maria de Souza')).toBe('AS')
+  it('mais de duas partes: primeira e última', () => {
+    expect(iniciais('ana_maria_souza')).toBe('AS')
   })
 
-  it('uma palavra: só a primeira letra', () => {
-    expect(iniciais('c0_visual')).toBe('C')
+  it('nick sem separador: só a primeira letra', () => {
+    expect(iniciais('ana')).toBe('A')
   })
 
-  it('ignora espaços extras e não quebra em letra acentuada', () => {
-    expect(iniciais('  Érica   Ómega ')).toBe('ÉÓ')
+  it('ignora separadores repetidos ou nas pontas e não quebra em letra acentuada', () => {
+    expect(iniciais('__érica__ómega_')).toBe('ÉÓ')
   })
 
   it('vazio vira "?"', () => {
     expect(iniciais('   ')).toBe('?')
+    expect(iniciais('')).toBe('?')
   })
 })
 

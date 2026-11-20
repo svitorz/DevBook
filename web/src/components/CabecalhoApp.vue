@@ -97,7 +97,7 @@ async function sair() {
             :aria-expanded="menuAberto"
             @click="menuAberto = !menuAberto"
           >
-            <AvatarUsuario :nome="sessao.usuario?.nome ?? ''" :semente="sessao.usuario?.nick ?? ''" />
+            <AvatarUsuario :nick="sessao.usuario?.nick ?? ''" />
           </button>
 
           <div v-if="menuAberto" id="menu-conta" class="menu-conta-painel">

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// Formulário de publicação, usado para criar (feed) e editar (no cartão).
+// Formulário de publicação, usado para criar (modal "Novo post") e editar (no cartão).
 // Recebe a ação como função assíncrona para mostrar o erro dela aqui mesmo.
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { textoDoErro } from '../api/client'
 import type { DadosPublicacao } from '../api/types'
 
@@ -12,8 +12,9 @@ const props = defineProps<{
   rotulo: string
   aoSalvar: (dados: DadosPublicacao) => Promise<void>
   inicial?: DadosPublicacao
-  limparAoSalvar?: boolean
   cancelavel?: boolean
+  /** Põe o cursor no título ao montar (ex.: ao abrir a edição no cartão). */
+  focarTitulo?: boolean
 }>()
 const emit = defineEmits<{ cancelar: [] }>()
 
@@ -21,16 +22,17 @@ const form = reactive({ titulo: props.inicial?.titulo ?? '', conteudo: props.ini
 const salvando = ref(false)
 const erro = ref('')
 const restantes = computed(() => LIMITE_CONTEUDO - form.conteudo.length)
+const campoTitulo = ref<HTMLInputElement | null>(null)
+
+onMounted(() => {
+  if (props.focarTitulo) campoTitulo.value?.focus()
+})
 
 async function salvar() {
   erro.value = ''
   salvando.value = true
   try {
     await props.aoSalvar({ titulo: form.titulo.trim(), conteudo: form.conteudo.trim() })
-    if (props.limparAoSalvar) {
-      form.titulo = ''
-      form.conteudo = ''
-    }
   } catch (e) {
     erro.value = textoDoErro(e)
   } finally {
@@ -43,11 +45,11 @@ async function salvar() {
   <form class="formulario" @submit.prevent="salvar">
     <label>
       Título
-      <input v-model="form.titulo" name="titulo" :maxlength="LIMITE_TITULO" required />
+      <input ref="campoTitulo" v-model="form.titulo" name="titulo" :maxlength="LIMITE_TITULO" required />
     </label>
     <label>
       Conteúdo
-      <textarea v-model="form.conteudo" name="conteudo" rows="3" :maxlength="LIMITE_CONTEUDO" required />
+      <textarea v-model="form.conteudo" name="conteudo" rows="5" :maxlength="LIMITE_CONTEUDO" required />
       <span class="dica" data-testid="restantes">{{ restantes }} caracteres restantes</span>
     </label>
     <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
