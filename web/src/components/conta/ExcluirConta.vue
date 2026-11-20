@@ -40,7 +40,8 @@ async function excluir() {
     </p>
     <form class="formulario" @submit.prevent="excluir">
       <label>
-        Digite <strong>{{ nick }}</strong> para confirmar
+        <!-- span: o label é coluna flex; sem ele, cada pedaço vira uma linha -->
+        <span>Digite <strong>{{ nick }}</strong> para confirmar</span>
         <input v-model="digitado" name="confirmar-nick" autocomplete="off" />
       </label>
       <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
