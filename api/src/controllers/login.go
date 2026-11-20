@@ -51,6 +51,7 @@ func (c *Controllers) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responses.JSON(w, http.StatusOK, struct {
+		ID    uint64 `json:"id"`
 		Token string `json:"token"`
-	}{Token: token})
+	}{ID: usuarioSalvoNoBanco.ID, Token: token})
 }

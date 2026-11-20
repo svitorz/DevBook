@@ -3,8 +3,55 @@
 > Memória do projeto. Ler ANTES de qualquer coisa ao iniciar sessão ou após compactação.
 
 ## Fase atual
-**Fase 2 — correções da API (concluída, aguardando "continuar")**
-Branch: `chore/api-hardening` (fases 0–1 mergeadas no `main` via PR #1, `dbb1e25`; branch avançada em fast-forward).
+**Fase B — front Vue concluída (B0–B4). Aguardando o usuário: revisar e abrir o PR de `feat/web-vue`**
+Branch: `feat/web-vue` (criada de `main@5572166`; a fase A inteira foi mergeada via PR #1 e PR #2).
+
+### Decisões da Fase B (confirmadas pelo usuário em 2026-11-19)
+1. **Stack:** Vite + Vue 3 (`<script setup>`) + TypeScript, vue-router, pinia, `fetch` nativo num cliente pequeno (sem axios), CSS próprio simples e Vitest. O dev server roda no host (`npm run dev`), fora do compose.
+2. **Token:** fica no `localStorage`. Trade-off aceito: é legível por JS em caso de XSS. Mitigação: Vue escapa HTML por padrão e o projeto não usa `v-html`.
+3. **Usuário logado:** o login da API passa a devolver `{"id", "token"}` (mudança aditiva).
+4. **Escopo:** MVP completo, cobrindo todos os endpoints, em subfases com parada a cada uma:
+   - B0: fundação (scaffold, cliente, sessão, testes, `id` no login)
+   - B1: cadastro, login, logout e guarda de rotas
+   - B2: feed (criar, editar e excluir post; curtir)
+   - B3: perfil e social (posts do usuário, seguir/parar, seguidores/seguindo, busca)
+   - B4: minha conta (editar perfil, trocar senha, excluir conta)
+
+### Checklist Fase B
+- [x] B0 `id` no login da API (`98b56c1`): teste falhava e agora passa; fumaça 66/0
+- [x] B0 scaffold create-vite 9.3.4 isolado em um commit (`8cec2da`)
+- [x] B0 cliente HTTP, endpoints, tipos, sessão (pinia + localStorage) e 13 testes Vitest (`ad983d0`)
+- [x] B0 prova no navegador: `http://localhost:5173` chamou a API real e recebeu 401 via CORS
+- [x] B0 arquivos de demonstração do template removidos (com confirmação do usuário)
+- [x] B1 guarda de rotas + `?redirect=` seguro + sessão expirada vai para /entrar (`1d6f256`)
+- [x] B1 tela de login (`b0a8d0d`; erro de tipo no teste corrigido em `1abcf57`)
+- [x] B1 tela de cadastro com login automático (`6940be8`)
+- [x] B1 layout com cabeçalho e Sair (`97c3edc`)
+- [x] B1 39 testes Vitest + build passando
+- [x] B1 prova no navegador contra a API real: deslogado em `/` vai para `/entrar?redirect=/`; cadastro com senha fraca mostra o 400 da API; cadastro válido entra direto no feed; F5 mantém a sessão; Sair limpa o storage e vai para `/entrar`; nick duplicado mostra o 409; senha errada mostra o 401; login correto respeita `?redirect=/?de=link`
+- [x] Extra pedido pelo usuário antes da B2: compose na raiz builda e sobe db + API + web juntos (`a1d36fc`, `4331dd0`, `ac1dbbf`). Prova: `docker compose build` construiu `devbook-app` e `devbook-web`; `down` (sem `-v`) + `up -d` puro subiu os três; o usuário de teste da B1 (id 31) continuou no banco; `:8080/` → 200, F5 em `/entrar` → index.html, `/api/publicacoes` sem token → 401 da API, bundle sem `localhost:5000`; login no navegador em `:8080` fez `POST /api/login` → 200, e a sessão sobrevive ao F5; fumaça 66/0
+- [x] B1 sessão expirada (401 com token): provada no navegador na B2. Com o token adulterado no storage, o F5 no feed recebeu 401, a sessão foi limpa e a tela foi para `/entrar?redirect=/`
+- [x] B2 API: campo `curtiu` (decisão do usuário) com `TestB2_CurtiuIndicaSeOUsuarioDoTokenCurtiu` (falhava e agora passa); de quebra, sai o N+1 das curtidas (`791ceeb`); suíte Go ok; fumaça 66/0
+- [x] B2 composable `useListaDePublicacoes` (`403f3dc`)
+- [x] B2 formulário de publicação para criar e editar (`ddada28`)
+- [x] B2 feed: cartão com curtir (toggle), editar e excluir; estados carregando, vazio e erro (`e200eff`)
+- [x] B2 62 testes Vitest + build passando; container web rebuildado
+- [x] B2 prova no navegador contra a API real: feed mostra o post de quem segue; curtir sobrevive ao F5 (♥ 1, `aria-pressed=true`); publicar coloca o post no topo com nick e data reais e limpa o formulário; só o post próprio tem Editar/Excluir; a edição persiste após o F5; excluir pede confirmação e remove; descurtir volta a ♡ 0 após o F5
+- [x] B3 página de perfil com seguir/deixar de seguir (`9777545`; plural corrigido em `46dee93`)
+- [x] B3 listas de seguidores e seguindo (`3cc6528`); o teste foi escrito junto com o código e a falha foi provada depois, com `git stash` (2 falhavam sem o código)
+- [x] B3 busca `/buscar?q=`, links Buscar/Meu perfil no cabeçalho e @autor como link (`ab90f4f`)
+- [x] B3 76 testes Vitest + build passando; container web rebuildado (F5 em `/perfil/40` no nginx → 200)
+- [x] B3 prova no navegador contra a API real: a busca "b2_" põe `?q=` na URL e acha `@b2_outra`; o perfil mostra nome, @nick, membro desde, 1 seguidor, 0 seguindo e o post; deixar de seguir → Seguir/0, e seguir → Deixar de seguir/1, ambos persistindo após o F5; a lista de seguidores mostra o b1 com link; o próprio perfil não tem botão Seguir e marca "Meu perfil" como ativo; o @autor do feed leva a `/perfil/40`; `/perfil/999999` mostra "Usuário não encontrado"
+- [x] B4 bug latente corrigido antes da tela: senha atual errada (401 com token) deslogaria o usuário; `request()` ganhou `ignorar401DeSessao`, usado só no `atualizar-senha` (`ac222df`). O teste falhava e agora passa
+- [x] B4 `/conta`: editar perfil, trocar senha (com confirmação) e excluir conta (digitando o nick) (`bdd51b7`); os 9 testes falhavam antes
+- [x] B4 87 testes Vitest + build passando; container web rebuildado (F5 em `/conta` no nginx → 200); fumaça 66/0
+- [x] B4 prova no navegador contra a API real, com o usuário descartável `b4_descartavel`: o nome editado persiste após o F5; senha atual errada → "Senha atual incorreta." **com a sessão mantida**; troca correta → "Senha alterada." e campos limpos (pela API, a senha antiga → 401 e a nova → 200); o botão excluir fica travado com o nick parcial e libera com o nick completo; excluir → `/entrar?conta=excluida` com aviso e storage limpo; o login da conta excluída → 401; o usuário 42 sumiu do banco, e `b1_1795119` e `b2_outra` continuam
+
+### Como rodar o front
+**Tudo em container:** `docker compose up -d --build` da raiz sobe banco, API e web. Front em **http://localhost:8080** (nginx; `/api` encaminhado para a API, mesma origem).
+**Dev com hot reload:** `cd web && npm install && npm run dev`. Abrir **http://localhost:5173** (não 127.0.0.1: o CORS compara a origem exata). Testes: `npm test`. Tipos + build: `npm run build`.
+
+### Fase A — correções da API (concluída)
 
 ### Decisões da Fase 2 (confirmadas pelo usuário em 2026-11-19)
 1. **Contrato:** todos os itens `[contrato]` da fumaça foram aprovados como estão: 409 para duplicado; login devolve `{"token"}`; 400 para validação; curtir 2x é idempotente (204); senha atual errada dá 401; CORS liberado para `http://localhost:5173`.
@@ -13,8 +60,8 @@ Branch: `chore/api-hardening` (fases 0–1 mergeadas no `main` via PR #1, `dbb1e
 
 ### Como rodar os testes
 ```bash
+docker compose up -d db        # da raiz (o compose saiu de api/ em ac1dbbf)
 cd api
-docker compose --env-file .env.example up -d db
 TEST_DB_DSN='root:devbook_dev@tcp(127.0.0.1:3310)/devbook_test?parseTime=True&loc=Local' go test ./...
 ```
 Sem `TEST_DB_DSN`, só rodam os testes que não usam banco. O helper recusa qualquer banco cujo nome não contenha `test`, porque ele apaga os dados entre um teste e outro.
@@ -138,6 +185,14 @@ Não cobertos pela fumaça (provar com teste Go na fase 2): H1 (registro duplica
 - 2026-11-19 — **Infra (Fase 1)**: compose com `name: devbook`, porque o nome padrão `api` colide com containers `api-*` de outro projeto na máquina. Banco publicado em 3310, já que 3306 e 3307 estão ocupados no host. Dentro da rede a API usa `db:3306` fixo. A API escuta na mesma `API_PORT` dentro e fora. Healthcheck no MySQL, para a API só subir com o banco pronto (necessário agora que ela conecta no boot). Removi o volume `.:/app`, que esconderia o binário. A falta de `.env` virou aviso em vez de `log.Fatal`. Descartado: manter o `.env` dentro da imagem, porque vaza segredo e não é assim que o compose injeta variáveis.
 - 2026-11-19 — **Pool por injeção, não global**. Os handlers viraram métodos de `controllers.Controllers{db}`, e as rotas viraram funções `rotasX(c)`. Alternativa descartada: `var DB *gorm.DB` global no pacote `database`. Seria um diff menor (só troca o `Conectar()` por `database.DB`), mas cria estado global: os testes não conseguem trocar o banco sem mutar um global compartilhado, o que impede `t.Parallel()`, e a dependência fica escondida. Custo da escolha: assinatura nova em todos os handlers e um diff mecânico maior. Não configurei `SetMaxOpenConns` e afins: os defaults bastam para um projeto de estudo.
 - 2026-11-19 — **Efeitos colaterais da refatoração** (inevitáveis, porque o código removido era o próprio bug): (1) em `BuscarUsuarios`, o nil-deref quando `Conectar` falhava (parte do H4) deixou de existir; (2) o vazamento de pool no `CriarPublicacao` (parte do H2) deixou de existir. Nenhum dos dois era observável pela fumaça. O primeiro só acontecia com o banco fora do ar; a prova do segundo é a contagem de conexões acima. Agora uma falha de banco no boot dá `log.Fatal` com a mensagem, e não durante uma requisição.
+- 2026-11-19 — **Fase B0, decisões técnicas**: (1) cliente próprio sobre `fetch` (~60 linhas) em vez de axios: ele cobre JSON, token, `ApiError` e 204 sem dependência; (2) um 401 *com token enviado* encerra a sessão (token expirado), mas um 401 sem token (login errado) não, senão o login com senha errada "deslogaria"; (3) `configurarCliente` injeta o token e o callback no `main.ts`, para o cliente não importar a store (evita dependência circular e facilita teste); (4) Vite com `strictPort: 5173`, porque se a porta estiver ocupada ele pularia para 5174 e o CORS bloquearia em silêncio; (5) sem alias `@/`: imports relativos bastam no tamanho atual.
+- 2026-11-19 — **Fase B1, decisões técnicas**: (1) guarda única por `meta.soVisitante`: o padrão é exigir sessão, então rota nova nasce protegida (o erro "esqueci de proteger" vira o erro inofensivo "esqueci de liberar"); (2) `?redirect=` só aceita caminho interno: `//host` e `/\host` seriam open redirect; (3) `aoExpirarSessao` navega por nome para `/entrar`, porque o `push('/')` da B0 era navegação duplicada quando o usuário já estava em `/`: a guarda não rodava e a tela ficava aberta sem sessão; (4) as regras de senha **não** são repetidas no front: a API é a fonte da verdade e a tela mostra a mensagem dela. Descartado: validar em JS também, que daria feedback antes do envio, mas duplicaria a regra em dois lugares; (5) cadastro faz login automático. Se só o login falhar, vai para `/entrar?conta=criada`, porque reenviar daria 409; (6) logout é só local, porque o JWT é stateless e a API não tem revogação. Um token copiado vale até expirar (6h). Ver Ideias futuras; (7) `/entrar` e `/cadastro` são lazy (code splitting por rota, nativo do Vite).
+- 2026-11-19 — **Fase B4, decisões técnicas**: (1) o 401 de "senha atual errada" não encerra a sessão. Resolvido no cliente, com uma opção por requisição. Descartado: mudar o status na API para 400/403, que mexeria no contrato aprovado na fase 2; (2) esse 401 vira "Senha atual incorreta." na tela, porque a API manda a mensagem crua do bcrypt; (3) "confirmar nova senha" é a única regra checada só no front: a API nem recebe a confirmação. As regras de força continuam só como dica e `minlength`. A API **não** valida a força da senha nova (achado já registrado); (4) excluir conta exige digitar o nick em vez de um `confirm()`, porque é irreversível e cascateia (FKs `ON DELETE CASCADE` em publicações, seguidores e curtidas); depois `sessao.sair()`, já que o token seguiria válido para um usuário inexistente; (5) três componentes em `components/conta/`, cada um com seu estado de erro/sucesso, testados juntos em `ContaView.test.ts`, num commit só, porque compartilham a rota e o arquivo de teste.
+- 2026-11-19 — **Fase B3, decisões técnicas**: (1) "eu sigo este perfil?" sai da lista de **seguidores**, que o perfil já busca para a contagem: o dado é exato e a API não muda. Descartado: um campo novo na API, como foi o `curtiu`, que aqui seria redundante; (2) depois de seguir ou deixar de seguir, a lista de seguidores é buscada de novo, em vez de um ±1 local: contagem e estado vêm da API; (3) rotas com restrição no padrão (`:id(\d+)`, `:tipo(seguidores|seguindo)`): URL inválida cai no redirect em vez de chamar a API com `NaN`; (4) `watch` no id/tipo, porque ir de um perfil a outro reaproveita o componente; (5) a busca roda ao enviar, não a cada tecla (sem debounce e sem uma requisição por letra), e o termo fica em `?q=`, então F5 e link funcionam; termo vazio não chama a API, porque o `LIKE '%%'` listaria todo mundo; (6) o e-mail não é exibido em perfil nem listas, embora a API o devolva (ver achados); (7) `ListaUsuarios` é compartilhada pela busca e pelas conexões.
+- 2026-11-19 — **Fase B2, decisões técnicas**: (1) `curtiu` na API (opção escolhida pelo usuário) em vez de localStorage, que mentiria em outro navegador, ou de um "curtir" sem toggle; (2) `curtidas` e `curtiu` viram subconsultas correlacionadas no SELECT. Isso remove o N+1 que existia (um COUNT por post). Descartado: mais uma consulta por post, que dobraria o N+1; (3) o estado da lista fica num **composable**, não numa store pinia: o feed e o perfil (B3) têm listas independentes, e só muda a função que busca; (4) escritas não são otimistas: o estado só muda depois da confirmação da API. É mais simples e não precisa de rollback; o custo é a latência visível, aceitável aqui; (5) criar recarrega o feed em vez de inserir a resposta do POST, que não tem `autor_nick` e tem a data zerada (N14); (6) os componentes recebem as ações como funções async (`aoSalvar`, `aoCurtir`…) em vez de emitir eventos: assim o erro de cada ação aparece perto do botão que a disparou; (7) excluir usa `window.confirm`: é nativo, acessível e sem modal próprio. O link do autor para o perfil fica para a B3.
+- 2026-11-19 — **Compose único (pedido do usuário; opções escolhidas por ele)**: (1) `docker-compose.yml` na raiz, com contextos `./api` e `./web`. O `name: devbook` foi mantido, então o volume `devbook_mysql_data` é o mesmo; (2) web = build de produção (node:24-slim → nginx:alpine) em `:8080`, com `/api` encaminhado pelo nginx para `app:API_PORT`. Mesma origem: o container não depende de CORS, a API não mudou e o `npm run dev` na 5173 continua funcionando em paralelo. Descartados: nginx na 5173 (colidiria com o `npm run dev`) e Vite dev no container (não é build; HMR com bind mount é instável); (3) `${VAR:-padrão}` com os valores de dev, para o `up -d` funcionar sem `.env`. Trade-off aceito: a `SECRET_KEY` padrão é pública. Não criei um `.env.example` na raiz (duplicaria o `api/.env.example`); o README lista padrões e variáveis; (4) node **slim**, não alpine: o lock foi gerado em glibc; (5) o lock precisou de `@emnapi/*`, porque o npm 11.19 da imagem recusou o `npm ci` com o lock do npm 11.6 do host. Regenerei só o lock, com `--package-lock-only`, sem mudar versão. Descartado: `npm install` no Dockerfile, que tornaria o build não reprodutível.
+- 2026-11-19 — **Erro de processo (compose)**: o `git mv` deixou a renomeação preparada, e ela entrou no commit da imagem web (`4331dd0`) ainda com o conteúdo antigo (`build: .`). Nesse commit isolado, o compose da raiz não builda; o `ac1dbbf` conserta. Não reescrevi o histórico (pede confirmação; os commits são só locais).
+- 2026-11-19 — **Erro de processo (B1)**: o `b0a8d0d` foi comitado com o `vue-tsc` falhando, porque o `grep` no fim do encadeamento mascarou o código de saída (mesma classe do erro do H6). A correção veio em `1abcf57`. Desde então o front só é comitado depois de um script que roda testes e build e devolve o código de saída real.
 - 2026-11-19 — **Fase 2, decisões técnicas**: (1) "não encontrado" via `Take` + `gorm.ErrRecordNotFound`, traduzido em `responderErroDeBusca`; (2) 409/404 de escrita via `gorm.Config{TranslateError: true}` (`ErrDuplicatedKey`/`ErrForeignKeyViolated`), em vez de olhar o número do erro MySQL (seria acoplar ao driver); (3) curtir idempotente com `OnConflict{DoNothing}`, o mesmo padrão do Follow; (4) CORS escrito à mão (~20 linhas) em vez de `rs/cors`, sem lib nova; envolve o router inteiro porque o mux dá 405 ao OPTIONS; (5) N1 resolvido limpando `Senha` antes da resposta (DTO ficou em Ideias futuras); (6) H13 removeu a rota singular em vez de manter alias, porque ainda não há cliente.
 - 2026-11-19 — **Erro de processo (H6)**: o commit `14e6b16` saiu só com o teste, porque o `&&` checava o `grep` e não o `go test`. Não reescrevi o histórico (pede confirmação); a correção veio em `4266df2`. Desde então os commits só rodam se o `go test` sair com 0.
 - 2026-11-19 — Script de fumaça: o esperado de cada item é o contrato-alvo, e cada item isola um bug. Na primeira versão do script, o H2 contaminava os testes de ownership e eu tinha errado a direção do follow. Corrigi antes de registrar o baseline.
@@ -147,7 +202,7 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 | Endpoint | Antes | Agora |
 |---|---|---|
 | `GET /usuario/{id}` | singular | **`GET /usuarios/{id}`**; a rota singular foi removida |
-| `POST /login` | token em texto puro | `200 {"token": "..."}`, `application/json` |
+| `POST /login` | token em texto puro | `200 {"id": 1, "token": "..."}`, `application/json` (o `id` foi adicionado na fase B0) |
 | `POST /login` com falha | mensagem do bcrypt (vazava se o e-mail existe) | `401 {"erro":"e-mail ou senha inválidos"}` |
 | `POST /usuarios` | resposta incluía `senha` (hash) | sem `senha`; duplicado → **409** |
 | `PUT /usuarios/{id}` | exigia senha; 200 `null` | sem senha; **204**; nick/e-mail de outro → 409 |
@@ -155,6 +210,7 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 | `GET /publicacoes/usuario/{id}` | um objeto | **array** (mais recentes primeiro) |
 | `POST /publicacoes` | `autor_id` do corpo era aceito | ignorado (autor = token); inválido → 400 |
 | `POST .../curtir` repetido | 500 | 204 (idempotente) |
+| respostas de publicação | só `curtidas` | + `curtiu: bool` (o usuário do token curtiu), na fase B2; aditivo |
 | `POST /usuarios/{id}/seguir` a si mesmo | 403, mas gravava | 403 sem efeito; usuário inexistente → 404 |
 | `GET /usuarios/{id}/seguindo` | devolvia o próprio usuário | devolve quem ele segue |
 | id inexistente (GET/PUT/DELETE/curtir) | 200 zerado / panic / 500 | **404** |
@@ -170,15 +226,23 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 - Token é parseado duas vezes por request (middleware + `GetUserID`); `getToken` não checa o esquema `Bearer`.
 - Chave JSON inconsistente: `criadoem` (usuário) vs `criadaEm` (publicação).
 - README cita GORM "opcional" e `docker-compose` (v1).
+- Mensagens de validação da API com erros de digitação: `" e-mail inserido é inválido"` (espaço no início) e `"o senha é obrigatório"` (gênero). O front mostra essas mensagens como vêm.
+- `GET` autenticado sem header `Authorization` responde 401 `"token is malformed: token contains an invalid number of segments"`; um "token ausente" seria mais claro (visto ao testar o proxy).
+- A imagem da API usa `golang:1.24` inteira como runtime (~1 GB); um multi-stage com imagem mínima reduziria muito o tamanho.
+- `atualizar-senha` com a senha atual errada devolve no `erro` a mensagem crua do bcrypt (`crypto/bcrypt: hashedPassword is not the hash...`); deveria ser algo como "senha atual incorreta", igual ao login. O front já mascara.
+- **Privacidade:** `GET /usuarios?usuario=`, `/usuarios/{id}`, `/seguidores` e `/seguindo` devolvem o **e-mail** de qualquer usuário para qualquer logado. O front não mostra, mas está na resposta. Sugestão: só devolver `email` para o próprio usuário (DTO de saída, já listado em Ideias futuras).
+- Busca: `%` e `_` do termo não são escapados no `LIKE`, então viram curingas (`b2_` casa `b2x`). É baixo risco, mas a busca fica imprecisa.
+- Testes Go no host: a `TEST_DB_DSN` usa `loc=Local` (-03:00 no host) contra um MySQL em UTC, então os horários lidos nos testes ficam rotulados com o fuso errado (`20:33-03:00` para 17:33 local). O app não é afetado, porque API e banco rodam em UTC no container e a API devolve `...Z`. Correção possível: `loc=UTC` na DSN de teste.
+- A introdução do README da raiz ainda descreve o projeto só como "API RESTful".
 
 ## Ideias futuras
-- **Login devolver também o `id`** (`{"id", "token"}`). O front precisa saber quem está logado; hoje teria que decodificar o payload do JWT. Muda o contrato: decidir no início da fase B.
 - **DTOs de entrada/saída** em vez de reaproveitar `models.Usuario` (o N1 foi resolvido limpando o campo; `json:"-"` com DTO seria seguro por padrão).
 - `atualizar-senha` validar a força da senha nova com `validarSenha` (hoje aceita qualquer coisa).
 - Login: comparar com um hash fictício quando o e-mail não existe, para o tempo de resposta não denunciar a existência do e-mail (timing).
 - `SECRET_KEY` com tamanho mínimo (32 bytes para HS256).
 - Configurar o logger do GORM para não imprimir `record not found` como erro (agora o 404 passa por ele).
+- Logout com revogação (lista de tokens revogados ou expiração curta + refresh), já que hoje o "Sair" só apaga o token local.
 - Paginação em feed/listas, rate limit no login, refresh token: fora do escopo, como combinado.
 
 ## Próximo passo
-Usuário revisa/mergeia a fase 2 e escreve "continuar" → **Fase B (front Vue 3 em `web/`, branch `feat/web-vue`)**. Antes de codar, decidir com o usuário: stack do front (Vite + Vue 3 + TS? router/pinia? CSS), onde guardar o token, e a ideia "login devolve id".
+A fase B está completa. Próximo passo é decisão do usuário: revisar `feat/web-vue` e abrir o PR para `main` (o `gh` não está instalado, então o usuário abre). Depois, os candidatos ficam nos "Achados fora de escopo" e nas "Ideias futuras" (e-mail exposto, validação da senha nova, mensagem do bcrypt, `loc=UTC` nos testes, imagem Go multi-stage).

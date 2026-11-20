@@ -7,7 +7,12 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-const colunasPublicacao = "PUBLICACOES.id, PUBLICACOES.titulo, PUBLICACOES.conteudo, PUBLICACOES.autor_id, PUBLICACOES.criadaEm, USUARIOS.nick AS autor_nick"
+// colunasPublicacao calcula curtidas e "curtiu" na mesma consulta (subconsultas
+// correlacionadas), em vez de uma consulta extra por publicação. O único
+// parâmetro (?) é o id do usuário que está lendo (o do token).
+const colunasPublicacao = "PUBLICACOES.id, PUBLICACOES.titulo, PUBLICACOES.conteudo, PUBLICACOES.autor_id, PUBLICACOES.criadaEm, USUARIOS.nick AS autor_nick, " +
+	"(SELECT COUNT(*) FROM likes WHERE likes.post_id = PUBLICACOES.id) AS curtidas, " +
+	"EXISTS(SELECT 1 FROM likes WHERE likes.post_id = PUBLICACOES.id AND likes.user_id = ?) AS curtiu"
 
 type publicacoes struct {
 	db *gorm.DB
@@ -25,21 +30,16 @@ func (p publicacoes) Store(publicacao models.Publicacao) (uint64, error) {
 	return publicacao.ID, nil
 }
 
-func (p publicacoes) FindById(publicacaoID uint64) (models.Publicacao, error) {
+// FindById busca a publicação; leitorID é quem está lendo (define "curtiu").
+func (p publicacoes) FindById(publicacaoID, leitorID uint64) (models.Publicacao, error) {
 	var post models.Publicacao
 
 	if err := p.db.
-		Select(colunasPublicacao).
+		Select(colunasPublicacao, leitorID).
 		Joins("INNER JOIN USUARIOS ON USUARIOS.id = PUBLICACOES.autor_id").
 		Where("PUBLICACOES.id = ?", publicacaoID).
 		Take(&post).Error; err != nil {
 		return models.Publicacao{}, err // gorm.ErrRecordNotFound se não existir
-	}
-
-	var err error
-	post.Curtidas, err = p.getLikes(post.ID)
-	if err != nil {
-		return models.Publicacao{}, err
 	}
 
 	return post, nil
@@ -49,21 +49,13 @@ func (p publicacoes) Index(userId uint64) ([]models.Publicacao, error) {
 	var publicacoes []models.Publicacao
 
 	if err := p.db.
-		Select("DISTINCT "+colunasPublicacao).
+		Select("DISTINCT "+colunasPublicacao, userId).
 		Joins("INNER JOIN USUARIOS ON USUARIOS.id = PUBLICACOES.autor_id").
 		Joins("LEFT JOIN SEGUIDORES s ON PUBLICACOES.autor_id = s.usuario_id").
 		Where("USUARIOS.id = ? OR s.seguidor_id = ?", userId, userId).
 		Order("PUBLICACOES.id DESC").
 		Find(&publicacoes).Error; err != nil {
 		return nil, err
-	}
-
-	for i := range publicacoes {
-		curtidas, err := p.getLikes(publicacoes[i].ID)
-		if err != nil {
-			return nil, err
-		}
-		publicacoes[i].Curtidas = curtidas
 	}
 
 	return publicacoes, nil
@@ -81,25 +73,18 @@ func (p publicacoes) Destroy(publicacaoId uint64) error {
 	return p.db.Delete(&models.Publicacao{}, publicacaoId).Error
 }
 
-// FindByUserId devolve todas as publicações do autor, mais recentes primeiro.
-func (p publicacoes) FindByUserId(userId uint64) ([]models.Publicacao, error) {
+// FindByUserId devolve todas as publicações do autor, mais recentes primeiro;
+// leitorID é quem está lendo (define "curtiu").
+func (p publicacoes) FindByUserId(userId, leitorID uint64) ([]models.Publicacao, error) {
 	publicacoes := []models.Publicacao{} // [] e não null quando vazio
 
 	if err := p.db.
-		Select(colunasPublicacao).
+		Select(colunasPublicacao, leitorID).
 		Joins("INNER JOIN USUARIOS ON USUARIOS.id = PUBLICACOES.autor_id").
 		Where("PUBLICACOES.autor_id = ?", userId).
 		Order("PUBLICACOES.id DESC").
 		Find(&publicacoes).Error; err != nil {
 		return nil, err
-	}
-
-	for i := range publicacoes {
-		curtidas, err := p.getLikes(publicacoes[i].ID)
-		if err != nil {
-			return nil, err
-		}
-		publicacoes[i].Curtidas = curtidas
 	}
 
 	return publicacoes, nil
@@ -116,17 +101,4 @@ func (p publicacoes) UnlikePost(userId uint64, postId uint64) error {
 	return p.db.
 		Where("user_id = ? AND post_id = ?", userId, postId).
 		Delete(&models.Curtida{}).Error
-}
-
-func (p publicacoes) getLikes(postId uint64) (uint64, error) {
-	var count int64
-
-	if err := p.db.
-		Model(&models.Curtida{}).
-		Where("post_id = ?", postId).
-		Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return uint64(count), nil
 }

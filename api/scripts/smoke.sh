@@ -94,6 +94,7 @@ else fail "N2 login não revela se o e-mail existe" "corpos diferentes: '${BODY_
 req POST /login "{\"email\":\"$A_EMAIL\",\"senha\":\"$SENHA\"}"
 expect "login A" 200
 check "[contrato] H14 login responde JSON com token" 'has("token")'
+check "login devolve o id do usuário" ".id == $A_ID"
 TA="$(extract_token)"
 
 req POST /login "{\"email\":\"$B_EMAIL\",\"senha\":\"$SENHA\"}"

@@ -1,0 +1,2 @@
+# Variáveis locais do compose (padrões no docker-compose.yml; ver api/.env.example)
+.env
