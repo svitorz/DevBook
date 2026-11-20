@@ -1,5 +1,6 @@
 # Monorepo inteiro: banco + API (api/) + front (web/).
-#   docker compose up -d --build   (da raiz do repositório)
+#   docker compose up -d --build        (da raiz do repositório)
+#   docker compose --profile dev up -d  (+ Vite com hot reload em :5173)
 # Front: http://localhost:8080 · API: http://localhost:5000
 #
 # Sem .env, valem os padrões de DESENVOLVIMENTO abaixo (os mesmos de

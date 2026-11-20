@@ -30,12 +30,9 @@ API RESTful desenvolvida em **Go (Golang)** com foco em performance, boas práti
 
 ## 📦 Como executar
 
-### Pré-requisitos
+Só é preciso o [Docker](https://docs.docker.com/get-docker/) com o Compose v2 (`docker compose`). Node e Go no host são opcionais.
 
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/)
-
-### Clone e suba tudo
+### Subir tudo
 
 ```bash
 git clone https://github.com/svitorz/DevBook.git
@@ -55,6 +52,24 @@ Depois do primeiro build, `docker compose up -d` basta. Use `--build` de novo qu
 
 O front no container chama a API por `/api`, e o nginx encaminha para o container da API. Como tudo fica na mesma origem, o CORS não entra em jogo.
 
+### Editar o front com hot reload
+
+```bash
+docker compose --profile dev up -d
+```
+
+Além dos três serviços, sobe o `devbook-web-dev`: o Vite em **[http://localhost:5173](http://localhost:5173)**, que recarrega a tela ao salvar qualquer arquivo de `web/`. As dependências são instaladas dentro do container a cada subida (leva alguns segundos; acompanhe com `docker compose logs -f web-dev`). Para parar só ele: `docker compose stop web-dev`.
+
+Use `localhost`, e não `127.0.0.1`: o Vite chama a API em outra origem (`:5000`), e o CORS libera só a origem exata de `CORS_ORIGIN`. Se a recarga não perceber as edições (pasta compartilhada no Docker Desktop do Windows, por exemplo), suba com `CHOKIDAR_USEPOLLING=true docker compose --profile dev up -d`.
+
+Testes do front, também no container:
+
+```bash
+docker compose run --rm --no-deps web-dev npm test
+```
+
+A checagem de tipos roda no build da imagem do front (`docker compose build web`). Para usar Node no host em vez do container, veja [web/README.md](web/README.md).
+
 ### Variáveis (opcional)
 
 Sem `.env`, o compose usa padrões de **desenvolvimento** (os mesmos de `api/.env.example`). Para mudar algum, crie um `.env` na raiz com só as variáveis que quer sobrescrever. **A `SECRET_KEY` padrão é pública: troque antes de qualquer uso real.**
@@ -66,9 +81,12 @@ Sem `.env`, o compose usa padrões de **desenvolvimento** (os mesmos de `api/.en
 | `API_PORT` | `5000` | porta da API |
 | `WEB_PORT` | `8080` | porta do front no host |
 | `SECRET_KEY` | chave de dev | assinatura do JWT (a API não sobe sem ela) |
-| `CORS_ORIGIN` | `http://localhost:5173` | origem liberada no CORS (a do `npm run dev`) |
+| `CORS_ORIGIN` | `http://localhost:5173` | origem liberada no CORS (a do Vite de desenvolvimento) |
+| `CHOKIDAR_USEPOLLING` | `false` | `true` faz o hot reload checar os arquivos por polling |
 
 ### Testes da API
+
+Com o compose no ar (ao menos `docker compose up -d db`). Precisam de Go no host; a fumaça precisa de `bash`, `curl` e `jq`.
 
 ```bash
 cd api
@@ -77,39 +95,6 @@ TEST_DB_DSN='root:devbook_dev@tcp(127.0.0.1:3310)/devbook_test?parseTime=True&lo
 ```
 
 Sem `TEST_DB_DSN`, os testes de integração são pulados.
-
-### Desenvolvendo o front (hot reload)
-
-Para editar o front com recarga automática, rode o Vite no host. Ele usa a API do compose e pode rodar junto com o container `devbook-web`.
-
-**Pré-requisito:** [Node.js](https://nodejs.org/) 20.19+ ou 22.12+ (exigência do Vite 8).
-
-```bash
-cd web
-npm install
-npm run dev
-```
-
-Abra **[http://localhost:5173](http://localhost:5173)**. Use `localhost`, e não `127.0.0.1`: aqui o front chama a API em outra origem (`:5000`), e o CORS libera só a origem exata de `CORS_ORIGIN`. A porta é fixa (`strictPort`). Se a 5173 estiver ocupada, o Vite falha em vez de pular para a 5174, que o CORS bloquearia.
-
-| Variável (`web/.env`) | Uso |
-|---|---|
-| `VITE_API_URL` | URL da API no `npm run dev` (padrão `http://localhost:5000`; ver `web/.env.example`). No container ela é fixada em `/api` no build. |
-
-```bash
-npm test        # testes unitários (Vitest)
-npm run build   # checagem de tipos + build de produção em web/dist
-```
-
----|---|
-| `VITE_API_URL` | URL da API (padrão `http://localhost:5000`; ver `web/.env.example`) |
-
-Se mudar a porta ou o host do front, ajuste também `CORS_ORIGIN` na API.
-
-```bash
-npm test        # testes unitários (Vitest)
-npm run build   # checagem de tipos + build de produção em web/dist
-```
 
 ---
 
