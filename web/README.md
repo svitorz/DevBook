@@ -31,17 +31,19 @@ No container (`Dockerfile`), o build usa `VITE_API_URL=/api` e o nginx encaminha
 - `src/api/client.ts`: `fetch` com JSON, token e `ApiError` (`status` + mensagem do `{"erro"}` da API); um 401 com token encerra a sessão, exceto onde o endpoint pede o contrário (`atualizar-senha`)
 - `src/api/endpoints.ts`: uma função por endpoint; as views não montam URL
 - `src/api/types.ts`: tipos do contrato (`Usuario`, `Publicacao`, `Sessao`)
-- `src/stores/sessao.ts`: token + id do usuário, persistidos no `localStorage`
+- `src/stores/`: `sessao` (token + id no `localStorage`; nome/nick buscados da API), `tema` (claro/escuro), `avisos` (mensagens curtas que somem sozinhas)
 - `src/router/index.ts`: rotas e guarda (toda rota exige sessão, exceto as `soVisitante`) e `?redirect=` seguro
-- `src/composables/useListaDePublicacoes.ts`: estado e ações de uma lista de publicações (feed e perfil)
-- `src/views/`: `Login`, `Cadastro`, `Inicio` (feed), `Perfil`, `Conexoes` (seguidores/seguindo), `Busca`, `Conta`
-- `src/components/`: cabeçalho, formulário e cartão de publicação, lista de usuários e as seções de `conta/`
+- `src/composables/`: `useListaDePublicacoes` (feed e perfil) e `useQuemEuSigo` (botões Seguir nas listas)
+- `src/utils/`: avatar (iniciais e cor pelo nick), tempo relativo, regras da senha (espelho da API, só para orientar)
+- `src/views/`: `Login`, `Cadastro`, `Inicio` (feed), `Perfil` (com as abas de seguidores/seguindo), `Busca`, `Conta`
+- `src/components/`: cabeçalho, janela modal (`<dialog>`), cartão e formulário de publicação, campo de formulário, avatar, ícones (SVG próprios), listas de usuários e as seções de `conta/`
+- `src/style.css`: tokens de design (cores, espaçamento, cantos, tipografia) e temas claro/escuro; a fonte Inter vem do próprio app (`@fontsource-variable/inter`)
 
 | Rota | Tela |
 |---|---|
 | `/entrar`, `/cadastro` | login e cadastro (só deslogado) |
-| `/` | feed: publicar, editar, excluir, curtir |
-| `/perfil/:id` | perfil, seguir/deixar de seguir, publicações |
-| `/perfil/:id/seguidores`, `/perfil/:id/seguindo` | conexões |
-| `/buscar?q=` | busca por nome ou nick |
+| `/` | feed: "Novo post" (modal), editar, excluir, curtir |
+| `/perfil/:id` | perfil, seguir/deixar de seguir, aba de publicações |
+| `/perfil/:id/seguidores`, `/perfil/:id/seguindo` | abas de conexões do perfil, com Seguir em cada pessoa |
+| `/buscar?q=` | busca por nome ou nick enquanto digita |
 | `/conta` | editar perfil, trocar senha, excluir conta |
