@@ -25,6 +25,21 @@ describe('CabecalhoApp', () => {
     expect(wrapper.find('[data-testid=sair]').exists()).toBe(false)
   })
 
+  it('botão de tema aparece mesmo deslogado e alterna o tema', async () => {
+    vi.stubGlobal('matchMedia', undefined) // sistema "claro"
+    const { wrapper } = await montar()
+    const botao = () => wrapper.get('[data-testid=alternar-tema]')
+
+    expect(botao().attributes('aria-label')).toBe('Ativar tema escuro')
+    expect(botao().find('svg').attributes('aria-hidden')).toBe('true')
+    await botao().trigger('click')
+
+    expect(botao().attributes('aria-label')).toBe('Ativar tema claro')
+    expect(document.documentElement.dataset.tema).toBe('escuro')
+    vi.unstubAllGlobals()
+    delete document.documentElement.dataset.tema
+  })
+
   it('Sair encerra a sessão, apaga o storage e vai para /entrar', async () => {
     localStorage.setItem('devbook.sessao', JSON.stringify({ id: 1, token: 'tok' }))
     const { wrapper, router } = await montar()
