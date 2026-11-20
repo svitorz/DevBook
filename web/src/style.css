@@ -366,19 +366,15 @@ textarea {
 .cabecalho-conteudo {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--esp-3);
-  padding-top: var(--esp-3);
-  padding-bottom: var(--esp-3);
-}
-
-.cabecalho-direita {
-  display: flex;
-  align-items: center;
-  gap: var(--esp-3);
+  gap: var(--esp-4);
+  padding-top: var(--esp-2);
+  padding-bottom: var(--esp-2);
 }
 
 .marca {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
   font-weight: 700;
   font-size: var(--texto-lg);
   letter-spacing: -0.02em;
@@ -398,6 +394,9 @@ textarea {
 }
 
 .nav-principal a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--texto-suave);
   text-decoration: none;
   padding: 6px 10px;
@@ -412,9 +411,141 @@ textarea {
   background: var(--superficie-2);
 }
 
-.nav-principal a.router-link-exact-active {
+.nav-principal a[aria-current='page'] {
   color: var(--texto);
   font-weight: 600;
+  background: var(--superficie-2);
+}
+
+.cabecalho-direita {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin-left: auto;
+}
+
+/* ---------- avatar e menu da conta ---------- */
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+}
+
+.menu-conta {
+  position: relative;
+}
+
+.botao-avatar {
+  display: inline-flex;
+  padding: 2px;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: border-color var(--transicao);
+}
+
+.botao-avatar:hover,
+.botao-avatar[aria-expanded='true'] {
+  border-color: var(--borda-forte);
+}
+
+.menu-conta-painel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--esp-2));
+  min-width: 220px;
+  padding: var(--esp-1);
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra-2);
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-conta-quem {
+  display: flex;
+  flex-direction: column;
+  padding: var(--esp-2) var(--esp-3);
+  margin-bottom: var(--esp-1);
+  border-bottom: 1px solid var(--borda);
+  font-size: var(--texto-sm);
+}
+
+.menu-conta-quem span {
+  color: var(--texto-suave);
+}
+
+.menu-conta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  width: 100%;
+  padding: var(--esp-2) var(--esp-3);
+  font: inherit;
+  font-size: var(--texto-sm);
+  color: var(--texto);
+  text-align: left;
+  text-decoration: none;
+  background: none;
+  border: none;
+  border-radius: var(--raio-sm);
+  cursor: pointer;
+}
+
+.menu-conta-item:hover {
+  color: var(--texto);
+  background: var(--superficie-2);
+}
+
+/* ---------- celular: a nav vira barra de abas no rodapé ---------- */
+
+@media (max-width: 639px) {
+  /* backdrop-filter faz o header virar o "containing block" de filhos fixos,
+     e a barra ficaria presa nele em vez de no rodapé da tela. */
+  .cabecalho {
+    backdrop-filter: none;
+    background: var(--superficie);
+  }
+
+  .nav-principal {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    justify-content: space-around;
+    gap: 0;
+    padding: var(--esp-1) var(--esp-2) calc(var(--esp-1) + env(safe-area-inset-bottom));
+    background: var(--superficie);
+    border-top: 1px solid var(--borda);
+  }
+
+  .nav-principal a {
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 0;
+    font-size: var(--texto-xs);
+  }
+
+  .nav-principal a[aria-current='page'] {
+    color: var(--primaria);
+    background: none;
+  }
+
+  /* espaço para o conteúdo não ficar atrás da barra */
+  body:has(.nav-principal) {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
 }
 
 /* ---------- títulos e layout geral ---------- */

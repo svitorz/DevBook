@@ -136,8 +136,16 @@ describe('Minha conta: excluir conta', () => {
 })
 
 describe('cabeçalho', () => {
-  it('tem o link Minha conta', async () => {
+  it('salvar o perfil atualiza o nome no menu da conta', async () => {
+    vi.spyOn(usuariosApi, 'atualizar').mockResolvedValue(undefined)
     const { wrapper } = await abrir()
-    expect(wrapper.get('nav[aria-label=Principal] a[href="/conta"]').text()).toBe('Minha conta')
+    expect(wrapper.get('[data-testid=menu-conta]').text()).toBe('AL')
+
+    vi.mocked(usuariosApi.obter).mockResolvedValue({ ...EU, nome: 'Bia Souza' })
+    await wrapper.get('[data-testid=form-perfil] input[name=nome]').setValue('Bia Souza')
+    await wrapper.get('[data-testid=form-perfil]').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid=menu-conta]').text()).toBe('BS')
   })
 })

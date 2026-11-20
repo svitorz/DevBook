@@ -28,6 +28,7 @@ beforeEach(() => {
   const sessao = useSessaoStore()
   sessao.token = 'tok'
   sessao.usuarioId = 1
+  vi.spyOn(usuariosApi, 'obter').mockResolvedValue(usuario(1)) // o cabeçalho carrega o usuário logado
 })
 
 describe('BuscaView', () => {
@@ -62,14 +63,5 @@ describe('BuscaView', () => {
     await flushPromises()
 
     expect(buscar).not.toHaveBeenCalled()
-  })
-})
-
-describe('cabeçalho logado', () => {
-  it('tem links para Buscar e Meu perfil', async () => {
-    vi.spyOn(usuariosApi, 'buscar').mockResolvedValue([])
-    const { wrapper } = await abrir('/buscar')
-    expect(wrapper.get('nav[aria-label=Principal] a[href="/buscar"]').text()).toBe('Buscar')
-    expect(wrapper.get('nav[aria-label=Principal] a[href="/perfil/1"]').text()).toBe('Meu perfil')
   })
 })
