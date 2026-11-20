@@ -585,11 +585,36 @@ textarea {
 
 /* ---------- feed e publicações ---------- */
 
+.feed-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+}
+
+.feed-topo .titulo-pagina {
+  margin: 0;
+}
+
 .feed {
   display: flex;
   flex-direction: column;
   gap: var(--esp-3);
   margin-top: var(--esp-5);
+}
+
+.vazio {
+  text-align: center;
+  padding: var(--esp-6) var(--esp-5);
+}
+
+.vazio p {
+  margin: 0;
+}
+
+.vazio .dica {
+  margin-top: var(--esp-2);
+  font-size: var(--texto-sm);
 }
 
 .publicacao {
@@ -607,14 +632,23 @@ textarea {
   color: var(--texto-suave);
 }
 
-.autor {
-  font-weight: 600;
-  color: var(--texto);
+.publicacao-topo {
+  margin-bottom: var(--esp-1);
+}
+
+.publicacao-autor {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
   text-decoration: none;
 }
 
-.autor:hover {
+.autor {
+  font-weight: 600;
   color: var(--texto);
+}
+
+.publicacao-autor:hover .autor {
   text-decoration: underline;
 }
 
@@ -630,14 +664,26 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.publicacao-rodape {
+  margin-top: var(--esp-1);
+}
+
+.publicacao-acoes {
+  display: flex;
+  gap: var(--esp-1);
+}
+
 .botao-curtir {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font: inherit;
   font-size: var(--texto-sm);
   color: var(--texto-suave);
   background: none;
   border: 1px solid var(--borda);
   border-radius: var(--raio-total);
-  padding: 3px 12px;
+  padding: 5px 12px;
   cursor: pointer;
   transition:
     color var(--transicao),
@@ -654,6 +700,144 @@ textarea {
   color: var(--perigo);
   border-color: var(--perigo);
   background: var(--perigo-suave);
+}
+
+.botao-icone.perigo:hover {
+  color: var(--perigo);
+  background: var(--perigo-suave);
+}
+
+.botao-icone:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ---------- esqueleto de carregamento ---------- */
+
+.esqueleto {
+  gap: var(--esp-3);
+}
+
+.esqueleto-linha-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.esqueleto-bloco {
+  display: block;
+  height: 12px;
+  border-radius: var(--raio-sm);
+  background: linear-gradient(90deg, var(--superficie-2) 25%, var(--borda) 50%, var(--superficie-2) 75%);
+  background-size: 200% 100%;
+  animation: brilho 1.4s ease-in-out infinite;
+}
+
+.esqueleto-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+@keyframes brilho {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* ---------- janela modal ---------- */
+
+.janela {
+  width: min(560px, calc(100vw - 2 * var(--esp-4)));
+  max-height: calc(100dvh - 2 * var(--esp-5));
+  padding: 0;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-2);
+}
+
+.janela::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.janela[open] {
+  animation: janela-entra 160ms ease-out;
+}
+
+@keyframes janela-entra {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.janela-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--esp-3) var(--esp-3) var(--esp-3) var(--esp-5);
+  border-bottom: 1px solid var(--borda);
+}
+
+.janela-titulo {
+  margin: 0;
+  font-size: var(--texto-lg);
+  font-weight: 600;
+}
+
+.janela-corpo {
+  padding: var(--esp-5);
+}
+
+.janela-texto {
+  margin: 0 0 var(--esp-5);
+  color: var(--texto-suave);
+}
+
+/* ---------- avisos curtos ---------- */
+
+.avisos {
+  position: fixed;
+  left: 50%;
+  bottom: var(--esp-5);
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-2);
+  pointer-events: none;
+}
+
+.aviso-toast {
+  margin: 0;
+  padding: var(--esp-2) var(--esp-4);
+  font-size: var(--texto-sm);
+  font-weight: 500;
+  color: var(--fundo);
+  background: var(--texto);
+  border-radius: var(--raio-total);
+  box-shadow: var(--sombra-2);
+  animation: aviso-entra 180ms ease-out;
+}
+
+@keyframes aviso-entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (max-width: 639px) {
+  /* acima da barra de abas */
+  .avisos {
+    bottom: calc(76px + env(safe-area-inset-bottom));
+  }
 }
 
 /* ---------- perfil ---------- */
