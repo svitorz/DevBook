@@ -842,38 +842,88 @@ textarea {
 
 /* ---------- perfil ---------- */
 
+.perfil {
+  padding-bottom: 0;
+}
+
 .perfil-topo {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--esp-3);
+  align-items: center;
+  gap: var(--esp-4);
+}
+
+.perfil-identidade {
+  flex: 1;
+  min-width: 0;
 }
 
 .perfil-nome {
   font-size: var(--texto-xl);
   font-weight: 700;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
-.perfil-topo .dica {
+.perfil-identidade .dica {
   margin: 2px 0 0;
-}
-
-.perfil-contagens {
-  display: flex;
-  gap: var(--esp-4);
-  margin-top: var(--esp-3);
   font-size: var(--texto-sm);
 }
 
-.perfil-contagens a {
-  color: var(--texto-suave);
+.perfil-topo > .botao-secundario {
   text-decoration: none;
 }
 
-.perfil-contagens a:hover strong,
-.perfil-contagens strong {
+/* abas do perfil: links com o número em destaque */
+.abas {
+  display: flex;
+  gap: var(--esp-1);
+  margin: var(--esp-4) calc(-1 * var(--esp-5)) 0;
+  padding: 0 var(--esp-5);
+  border-top: 1px solid var(--borda);
+  font-size: var(--texto-sm);
+  overflow-x: auto;
+}
+
+.abas a {
+  padding: var(--esp-3) var(--esp-3);
+  color: var(--texto-suave);
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition:
+    color var(--transicao),
+    border-color var(--transicao);
+}
+
+.abas a:hover {
   color: var(--texto);
+}
+
+.abas a strong {
+  color: var(--texto);
+}
+
+.abas a[aria-current='page'] {
+  color: var(--texto);
+  border-bottom-color: var(--primaria);
+}
+
+@media (max-width: 639px) {
+  .perfil-topo {
+    flex-wrap: wrap;
+  }
+
+  /* o botão (Seguir / Editar perfil) desce para uma linha inteira */
+  .perfil-topo > .botao,
+  .perfil-topo > .botao-secundario {
+    width: 100%;
+  }
+
+  .abas {
+    margin-left: calc(-1 * var(--esp-4));
+    margin-right: calc(-1 * var(--esp-4));
+    padding: 0 var(--esp-2);
+  }
 }
 
 /* ---------- listas de usuários e busca ---------- */
@@ -889,27 +939,75 @@ textarea {
 
 .item-usuario {
   display: flex;
-  align-items: baseline;
-  gap: var(--esp-2);
-  color: var(--texto);
-  text-decoration: none;
-  transition: border-color var(--transicao);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-3) var(--esp-4);
 }
 
-.item-usuario:hover {
+.item-usuario-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
   color: var(--texto);
-  border-color: var(--primaria);
+  text-decoration: none;
+}
+
+.item-usuario-link:hover {
+  color: var(--texto);
+}
+
+.item-usuario-link:hover strong {
+  text-decoration: underline;
+}
+
+.item-usuario-nomes {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.item-usuario-nomes > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-usuario .botao,
+.item-usuario .botao-secundario {
+  padding: 6px 12px;
+}
+
+.item-usuario-erro {
+  flex-basis: 100%;
 }
 
 .busca {
-  display: flex;
-  gap: var(--esp-2);
-  margin-bottom: var(--esp-4);
+  position: relative;
+  margin-bottom: var(--esp-2);
 }
 
 .busca input {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  padding-left: 40px;
+  font-size: var(--texto-base);
+  height: 44px;
+}
+
+.busca-icone {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--texto-suave);
+  pointer-events: none;
+}
+
+.busca-status {
+  min-height: 1.4em;
+  margin: 0 0 var(--esp-2);
 }
 
 /* ---------- minha conta ---------- */

@@ -45,9 +45,11 @@ export function criarRouter(history: RouterHistory = createWebHistory()): Router
         props: (r) => ({ id: Number(r.params.id) }),
       },
       {
+        // Mesmo componente do perfil: as conexões são abas dele (C3). Ir de
+        // uma aba a outra reaproveita a instância, sem recarregar o perfil.
         path: '/perfil/:id(\\d+)/:tipo(seguidores|seguindo)',
         name: 'conexoes',
-        component: () => import('../views/ConexoesView.vue'),
+        component: () => import('../views/PerfilView.vue'),
         props: (r) => ({ id: Number(r.params.id), tipo: r.params.tipo }),
       },
       { path: '/conta', name: 'conta', component: () => import('../views/ContaView.vue') },
