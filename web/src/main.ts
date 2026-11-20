@@ -4,6 +4,7 @@ import App from './App.vue'
 import { configurarCliente } from './api/client'
 import { encerrarSessaoExpirada, router } from './router'
 import { useSessaoStore } from './stores/sessao'
+import '@fontsource-variable/inter'
 import './style.css'
 
 const app = createApp(App)
