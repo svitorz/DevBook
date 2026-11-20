@@ -95,4 +95,11 @@ describe('LoginView', () => {
     const { wrapper } = await montar()
     expect(wrapper.find('a[href="/cadastro"]').exists()).toBe(true)
   })
+
+  it('apresenta o DevBook e tem botão de mostrar a senha', async () => {
+    const { wrapper: w } = await montar()
+    expect(w.get('[data-testid=apresentacao]').text()).toContain('DevBook')
+    await w.get('button[aria-label="Mostrar senha"]').trigger('click')
+    expect(w.get('input[name=senha]').attributes('type')).toBe('text')
+  })
 })

@@ -130,10 +130,6 @@ h3 {
   padding: var(--esp-5) var(--esp-4);
 }
 
-.estreito {
-  max-width: 400px;
-}
-
 a {
   color: var(--primaria);
   text-underline-offset: 2px;
@@ -1010,6 +1006,180 @@ textarea {
   margin: 0 0 var(--esp-2);
 }
 
+/* ---------- campo de formulário ---------- */
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campo > label {
+  font-size: var(--texto-sm);
+  font-weight: 500;
+}
+
+.campo-controle {
+  position: relative;
+  display: flex;
+}
+
+.campo-controle input {
+  flex: 1;
+  min-width: 0;
+}
+
+.campo-controle input.com-botao {
+  padding-right: 44px;
+}
+
+.campo-olho {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--texto-suave);
+  background: none;
+  border: none;
+  border-radius: var(--raio-sm);
+  cursor: pointer;
+}
+
+.campo-olho:hover {
+  color: var(--texto);
+  background: var(--superficie-2);
+}
+
+.regras-senha {
+  list-style: none;
+  margin: var(--esp-1) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 2px var(--esp-3);
+}
+
+.regras-senha li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--texto-suave);
+  transition: color var(--transicao);
+}
+
+.regras-senha li.ok {
+  color: var(--sucesso);
+}
+
+.botao-largo {
+  width: 100%;
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+
+/* ---------- telas de entrar e criar conta ---------- */
+
+.tela-entrada {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--esp-7);
+  align-items: center;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--esp-7) var(--esp-4);
+  min-height: calc(100dvh - 60px);
+}
+
+.apresentacao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.apresentacao-titulo {
+  margin: 0;
+  font-size: var(--texto-2xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.apresentacao-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  color: var(--texto-suave);
+}
+
+.apresentacao-lista li {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+.apresentacao-lista svg {
+  flex-shrink: 0;
+  color: var(--primaria);
+}
+
+.entrada-form {
+  width: 100%;
+  max-width: 420px;
+  justify-self: end;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.entrada-titulo {
+  margin: 0;
+  font-size: var(--texto-xl);
+}
+
+.entrada-subtitulo {
+  margin: calc(-1 * var(--esp-3)) 0 0;
+  color: var(--texto-suave);
+}
+
+.entrada-form .rodape-form {
+  margin: 0;
+}
+
+@media (max-width: 799px) {
+  .tela-entrada {
+    grid-template-columns: 1fr;
+    gap: var(--esp-5);
+    padding: var(--esp-5) var(--esp-4);
+    min-height: 0;
+    align-items: start;
+  }
+
+  /* no celular, só a frase: o formulário precisa caber sem rolar */
+  .apresentacao-lista,
+  .apresentacao-logo {
+    display: none;
+  }
+
+  .apresentacao-titulo {
+    font-size: var(--texto-lg);
+    color: var(--texto-suave);
+    font-weight: 500;
+  }
+
+  .entrada-form {
+    justify-self: stretch;
+    max-width: none;
+  }
+}
+
 /* ---------- minha conta ---------- */
 
 .conta {
@@ -1020,6 +1190,43 @@ textarea {
 
 .conta .titulo-pagina {
   margin-bottom: 0;
+}
+
+.conta-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4);
+}
+
+.conta-topo-quem {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.conta-topo-quem .dica {
+  font-size: var(--texto-sm);
+  overflow-wrap: anywhere;
+}
+
+.conta-topo > .botao-secundario {
+  text-decoration: none;
+}
+
+.titulo-secao + .secao-descricao {
+  margin: calc(-1 * var(--esp-2)) 0 var(--esp-4);
+  font-size: var(--texto-sm);
+}
+
+@media (max-width: 639px) {
+  .conta-topo {
+    flex-wrap: wrap;
+  }
+
+  .conta-topo > .botao-secundario {
+    width: 100%;
+  }
 }
 
 .zona-perigo {

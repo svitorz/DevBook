@@ -10,6 +10,12 @@ import CadastroView from './CadastroView.vue'
 
 const DADOS = { nome: 'Ana Lima', nick: 'ana', email: 'ana@devbook.dev', senha: 'Senha@123' }
 
+async function montarCadastro() {
+  const router = criarRouter(createMemoryHistory())
+  await router.push('/cadastro')
+  return mount(CadastroView, { global: { plugins: [router] } })
+}
+
 async function montarEEnviar() {
   const router = criarRouter(createMemoryHistory())
   await router.push('/cadastro')
@@ -72,5 +78,33 @@ describe('CadastroView', () => {
     // /entrar é lazy: a navegação só termina depois que o chunk carrega
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('entrar'))
     expect(router.currentRoute.value.query.conta).toBe('criada')
+  })
+
+  it('apresenta o DevBook ao lado do formulário', async () => {
+    const w = await montarCadastro()
+    expect(w.get('[data-testid=apresentacao]').text()).toContain('DevBook')
+  })
+
+  it('as regras da senha aparecem e vão sendo marcadas enquanto digita', async () => {
+    const w = await montarCadastro()
+    const regras = () => w.findAll('[data-testid=regras-senha] li')
+    expect(regras()).toHaveLength(5)
+    expect(regras().filter((li) => li.classes('ok'))).toHaveLength(0)
+
+    await w.get('input[name=senha]').setValue('Senha1')
+    expect(regras().filter((li) => li.classes('ok')).map((li) => li.text())).toEqual([
+      expect.stringContaining('maiúscula'),
+      expect.stringContaining('minúscula'),
+      expect.stringContaining('número'),
+    ])
+    // o estado também vai em texto, para quem usa leitor de tela
+    expect(regras()[0].text()).toContain('pendente')
+    expect(regras()[1].text()).toContain('ok')
+  })
+
+  it('o campo de senha tem botão de mostrar', async () => {
+    const w = await montarCadastro()
+    await w.get('button[aria-label="Mostrar senha"]').trigger('click')
+    expect(w.get('input[name=senha]').attributes('type')).toBe('text')
   })
 })
