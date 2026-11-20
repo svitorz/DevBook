@@ -20,9 +20,20 @@ export function destinoSeguro(valor: LocationQueryValue | LocationQueryValue[] |
   return valor
 }
 
+// /perfil/7 e /perfil/7/seguidores são abas do mesmo perfil (C3).
+const perfilDa = (path: string) => /^\/perfil\/(\d+)/.exec(path)?.[1]
+
 export function criarRouter(history: RouterHistory = createWebHistory()): Router {
   const router = createRouter({
     history,
+    // Sem isto, abrir um perfil depois de rolar o feed mantinha a rolagem lá
+    // embaixo. Voltar/avançar restaura a posição; trocar de aba não pula.
+    scrollBehavior(to, from, salva) {
+      if (salva) return salva
+      const perfil = perfilDa(to.path)
+      if (perfil && perfil === perfilDa(from.path)) return false
+      return { top: 0 }
+    },
     routes: [
       { path: '/', name: 'inicio', component: InicioView },
       {
