@@ -2,6 +2,8 @@
 import { reactive, ref } from 'vue'
 import { ApiError, textoDoErro } from '../../api/client'
 import { usuariosApi } from '../../api/endpoints'
+import CampoTexto from '../CampoTexto.vue'
+import RegrasSenha from '../RegrasSenha.vue'
 
 const props = defineProps<{ usuarioId: number }>()
 
@@ -34,29 +36,18 @@ async function trocar() {
 
 <template>
   <form class="formulario" data-testid="form-senha" @submit.prevent="trocar">
-    <label>
-      Senha atual
-      <input v-model="form.atual" name="atual" type="password" autocomplete="current-password" required />
-    </label>
-    <label>
-      Nova senha
-      <input
-        v-model="form.nova"
-        name="nova"
-        type="password"
-        autocomplete="new-password"
-        minlength="8"
-        required
-        aria-describedby="dica-nova-senha"
-      />
-      <span id="dica-nova-senha" class="dica">
-        Mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial.
-      </span>
-    </label>
-    <label>
-      Confirmar nova senha
-      <input v-model="form.confirmar" name="confirmar" type="password" autocomplete="new-password" required />
-    </label>
+    <CampoTexto v-model="form.atual" rotulo="Senha atual" name="atual" senha autocomplete="current-password" required />
+    <CampoTexto v-model="form.nova" rotulo="Nova senha" name="nova" senha autocomplete="new-password" minlength="8" required>
+      <template #descricao><RegrasSenha :senha="form.nova" /></template>
+    </CampoTexto>
+    <CampoTexto
+      v-model="form.confirmar"
+      rotulo="Confirmar nova senha"
+      name="confirmar"
+      senha
+      autocomplete="new-password"
+      required
+    />
     <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
     <p v-if="ok" class="sucesso" role="status">{{ ok }}</p>
     <div class="acoes"><button type="submit" class="botao" :disabled="salvando">Trocar senha</button></div>

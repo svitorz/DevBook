@@ -35,7 +35,7 @@ async function excluir() {
 <template>
   <section class="cartao zona-perigo" data-testid="excluir-conta" aria-labelledby="titulo-excluir">
     <h2 id="titulo-excluir" class="titulo-secao">Excluir conta</h2>
-    <p class="dica">
+    <p class="dica secao-descricao">
       Apaga sua conta, suas publicações, curtidas e conexões. Não dá para desfazer.
     </p>
     <form class="formulario" @submit.prevent="excluir">

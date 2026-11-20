@@ -4,6 +4,7 @@ import { textoDoErro } from '../../api/client'
 import { usuariosApi } from '../../api/endpoints'
 import type { Usuario } from '../../api/types'
 import { useSessaoStore } from '../../stores/sessao'
+import CampoTexto from '../CampoTexto.vue'
 
 const props = defineProps<{ usuario: Usuario }>()
 
@@ -35,13 +36,26 @@ async function salvar() {
 
 <template>
   <form class="formulario" data-testid="form-perfil" @submit.prevent="salvar">
-    <label>Nome <input v-model="form.nome" name="nome" autocomplete="name" maxlength="50" required /></label>
-    <label>Nick <input v-model="form.nick" name="nick" autocomplete="username" maxlength="50" required /></label>
-    <label>
-      E-mail
-      <input v-model="form.email" name="email" type="email" autocomplete="email" maxlength="50" required />
-      <span class="dica">É o e-mail usado para entrar.</span>
-    </label>
+    <CampoTexto v-model="form.nome" rotulo="Nome" name="nome" autocomplete="name" maxlength="50" required />
+    <CampoTexto
+      v-model="form.nick"
+      rotulo="Nick"
+      dica="Também define as iniciais e a cor do seu avatar."
+      name="nick"
+      autocomplete="username"
+      maxlength="50"
+      required
+    />
+    <CampoTexto
+      v-model="form.email"
+      rotulo="E-mail"
+      dica="É o e-mail usado para entrar. Não aparece no seu perfil."
+      name="email"
+      type="email"
+      autocomplete="email"
+      maxlength="50"
+      required
+    />
     <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
     <p v-if="ok" class="sucesso" role="status">{{ ok }}</p>
     <div class="acoes"><button type="submit" class="botao" :disabled="salvando">Salvar perfil</button></div>
