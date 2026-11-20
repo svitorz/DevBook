@@ -1,7 +1,9 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../api/client'
 import { publicacoesApi } from '../api/endpoints'
 import type { Publicacao } from '../api/types'
+import { useAvisosStore } from '../stores/avisos'
 import { useListaDePublicacoes } from './useListaDePublicacoes'
 
 function pub(id: number, extra: Partial<Publicacao> = {}): Publicacao {
@@ -18,7 +20,10 @@ function pub(id: number, extra: Partial<Publicacao> = {}): Publicacao {
   }
 }
 
-beforeEach(() => vi.restoreAllMocks())
+beforeEach(() => {
+  vi.restoreAllMocks()
+  setActivePinia(createPinia()) // os avisos ("Publicado.") ficam numa store
+})
 
 describe('useListaDePublicacoes', () => {
   it('carregar preenche a lista e controla o "carregando"', async () => {
@@ -116,5 +121,21 @@ describe('useListaDePublicacoes', () => {
 
     await expect(lista.alternarCurtida(1)).rejects.toThrow()
     expect(lista.publicacoes.value[0]).toMatchObject({ curtiu: false, curtidas: 3 })
+  })
+
+  it('criar, editar e excluir confirmam com um aviso curto; erro não avisa', async () => {
+    vi.spyOn(publicacoesApi, 'criar').mockResolvedValue(pub(3))
+    vi.spyOn(publicacoesApi, 'atualizar').mockResolvedValue(undefined)
+    vi.spyOn(publicacoesApi, 'deletar').mockRejectedValueOnce(new ApiError(500, 'x')).mockResolvedValue(undefined)
+    const lista = useListaDePublicacoes(vi.fn().mockResolvedValue([pub(3)]))
+    await lista.carregar()
+    const textos = () => useAvisosStore().avisos.map((a) => a.texto)
+
+    await lista.criar({ titulo: 't', conteudo: 'c' })
+    await lista.editar(3, { titulo: 't2', conteudo: 'c' })
+    await expect(lista.excluir(3)).rejects.toThrow()
+    expect(textos()).toEqual(['Publicado.', 'Publicação atualizada.'])
+    await lista.excluir(3)
+    expect(textos()).toEqual(['Publicado.', 'Publicação atualizada.', 'Publicação excluída.'])
   })
 })
