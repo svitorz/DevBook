@@ -3,8 +3,30 @@
 > Memória do projeto. Ler ANTES de qualquer coisa ao iniciar sessão ou após compactação.
 
 ## Fase atual
-**Fase B — front Vue concluída (B0–B4). Aguardando o usuário: revisar e abrir o PR de `feat/web-vue`**
-Branch: `feat/web-vue` (criada de `main@5572166`; a fase A inteira foi mergeada via PR #1 e PR #2).
+**Fase C — interface mais bonita e intuitiva. Em andamento: C0 (fundação visual)**
+Branch: `feat/web-ui` (criada de `main@cba7a89`; a fase B foi mergeada via PR #3).
+
+### Decisões da Fase C (confirmadas pelo usuário em 2026-11-19)
+Meta: melhorar visual e usabilidade **só no front**, sem mudar a API. Cada parada traz prints de antes/depois, e a suíte existente continua verde.
+1. **Estilo:** limpo e neutro (referência: GitHub/Linear), com uma cor de destaque.
+2. **Fonte:** Inter servida pelo próprio app (`@fontsource-variable/inter`), sem CDN. Motivo: o `system-ui` virava fonte monoespaçada no Linux do usuário.
+3. **Ícones:** ~10 SVGs próprios num componente `Icone.vue`, sem biblioteca.
+4. **Tema:** segue o sistema, com botão para alternar; a escolha fica no `localStorage`.
+5. **Limitação aceita:** a publicação só traz `autor_nick`, então o avatar usa iniciais do nick com cor derivada dele. Nome no cartão exigiria mudar a API (fora da meta).
+6. **Subfases (parada ao fim de cada uma):**
+   - C0: fundação visual (tokens, fonte, ícones, tema claro/escuro, componentes base)
+   - C1: navegação (logo, menu do avatar, barra de abas no celular)
+   - C2: feed (publicar recolhido, cartão com avatar e tempo relativo, esqueleto, confirmação própria, avisos)
+   - C3: perfil, busca e conexões (cabeçalho do perfil, abas, busca ao digitar, Seguir nas listas)
+   - C4: entrada e conta (apresentação, mostrar senha, regras visíveis, seções)
+
+### Checklist Fase C
+- [ ] C0 fonte Inter e tokens de design
+- [ ] C0 tema claro/escuro com botão
+- [ ] C0 ícones e componentes base
+- [ ] C0 prova no navegador com prints de antes/depois
+
+### Fase B — front Vue (concluída, PR #3)
 
 ### Decisões da Fase B (confirmadas pelo usuário em 2026-11-19)
 1. **Stack:** Vite + Vue 3 (`<script setup>`) + TypeScript, vue-router, pinia, `fetch` nativo num cliente pequeno (sem axios), CSS próprio simples e Vitest. O dev server roda no host (`npm run dev`), fora do compose.
@@ -245,4 +267,4 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 - Paginação em feed/listas, rate limit no login, refresh token: fora do escopo, como combinado.
 
 ## Próximo passo
-A fase B está completa. Próximo passo é decisão do usuário: revisar `feat/web-vue` e abrir o PR para `main` (o `gh` não está instalado, então o usuário abre). Depois, os candidatos ficam nos "Achados fora de escopo" e nas "Ideias futuras" (e-mail exposto, validação da senha nova, mensagem do bcrypt, `loc=UTC` nos testes, imagem Go multi-stage).
+Fase C em andamento: C0 (fundação visual). Ao terminar, parar e aguardar "continuar" para a C1.
