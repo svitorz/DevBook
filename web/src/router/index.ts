@@ -20,9 +20,20 @@ export function destinoSeguro(valor: LocationQueryValue | LocationQueryValue[] |
   return valor
 }
 
+// /perfil/7 e /perfil/7/seguidores são abas do mesmo perfil (C3).
+const perfilDa = (path: string) => /^\/perfil\/(\d+)/.exec(path)?.[1]
+
 export function criarRouter(history: RouterHistory = createWebHistory()): Router {
   const router = createRouter({
     history,
+    // Sem isto, abrir um perfil depois de rolar o feed mantinha a rolagem lá
+    // embaixo. Voltar/avançar restaura a posição; trocar de aba não pula.
+    scrollBehavior(to, from, salva) {
+      if (salva) return salva
+      const perfil = perfilDa(to.path)
+      if (perfil && perfil === perfilDa(from.path)) return false
+      return { top: 0 }
+    },
     routes: [
       { path: '/', name: 'inicio', component: InicioView },
       {
@@ -45,9 +56,11 @@ export function criarRouter(history: RouterHistory = createWebHistory()): Router
         props: (r) => ({ id: Number(r.params.id) }),
       },
       {
+        // Mesmo componente do perfil: as conexões são abas dele (C3). Ir de
+        // uma aba a outra reaproveita a instância, sem recarregar o perfil.
         path: '/perfil/:id(\\d+)/:tipo(seguidores|seguindo)',
         name: 'conexoes',
-        component: () => import('../views/ConexoesView.vue'),
+        component: () => import('../views/PerfilView.vue'),
         props: (r) => ({ id: Number(r.params.id), tipo: r.params.tipo }),
       },
       { path: '/conta', name: 'conta', component: () => import('../views/ContaView.vue') },

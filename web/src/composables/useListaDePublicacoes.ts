@@ -2,17 +2,20 @@
 // publicações de um perfil (B3): muda só a função que busca a lista.
 //
 // Ações de escrita propagam o erro (quem chamou mostra a mensagem perto do
-// botão) e só mexem no estado local depois que a API confirmou.
+// botão) e só mexem no estado local depois que a API confirmou. O sucesso
+// vira um aviso curto (C2); curtir não avisa, porque o coração já mostra.
 
 import { ref } from 'vue'
 import { textoDoErro } from '../api/client'
 import { publicacoesApi } from '../api/endpoints'
 import type { DadosPublicacao, Publicacao } from '../api/types'
+import { useAvisosStore } from '../stores/avisos'
 
 export function useListaDePublicacoes(buscar: () => Promise<Publicacao[]>) {
   const publicacoes = ref<Publicacao[]>([])
   const carregando = ref(false)
   const erro = ref('')
+  const avisos = useAvisosStore()
 
   async function carregar() {
     carregando.value = true
@@ -31,6 +34,7 @@ export function useListaDePublicacoes(buscar: () => Promise<Publicacao[]>) {
   // e a data vem zerada (achado N14 da API).
   async function criar(dados: DadosPublicacao) {
     await publicacoesApi.criar(dados)
+    avisos.avisar('Publicado.')
     await carregar()
   }
 
@@ -42,11 +46,13 @@ export function useListaDePublicacoes(buscar: () => Promise<Publicacao[]>) {
     await publicacoesApi.atualizar(id, dados)
     const p = achar(id)
     if (p) Object.assign(p, dados)
+    avisos.avisar('Publicação atualizada.')
   }
 
   async function excluir(id: number) {
     await publicacoesApi.deletar(id)
     publicacoes.value = publicacoes.value.filter((p) => p.id !== id)
+    avisos.avisar('Publicação excluída.')
   }
 
   async function alternarCurtida(id: number) {

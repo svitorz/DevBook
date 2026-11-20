@@ -33,6 +33,24 @@ beforeEach(() => {
   vi.spyOn(usuariosApi, 'obter').mockResolvedValue({ ...EU })
 })
 
+describe('Minha conta: cabeçalho', () => {
+  it('mostra quem é você: avatar, nome, @nick e o e-mail de entrada', async () => {
+    const { wrapper } = await abrir()
+    const topo = wrapper.get('[data-testid=conta-topo]')
+    expect(topo.get('.avatar').text()).toBe('A')
+    expect(topo.text()).toContain('Ana Lima')
+    expect(topo.text()).toContain('@ana')
+    expect(topo.text()).toContain('ana@x.test')
+  })
+
+  it('cada seção tem título e uma linha explicando o que faz', async () => {
+    const { wrapper } = await abrir()
+    const titulos = wrapper.findAll('main section h2').map((h) => h.text())
+    expect(titulos).toEqual(['Perfil', 'Senha', 'Excluir conta'])
+    wrapper.findAll('main section').forEach((sec) => expect(sec.find('.secao-descricao').exists()).toBe(true))
+  })
+})
+
 describe('Minha conta: editar perfil', () => {
   it('vem preenchido com os dados atuais e salva sem espaços nas pontas', async () => {
     const atualizar = vi.spyOn(usuariosApi, 'atualizar').mockResolvedValue(undefined)
@@ -86,6 +104,13 @@ describe('Minha conta: trocar senha', () => {
     expect(router.currentRoute.value.name).toBe('conta')
   })
 
+  it('a nova senha mostra as regras e os campos têm mostrar/ocultar', async () => {
+    const { wrapper } = await abrir()
+    await wrapper.get(`${form} input[name=nova]`).setValue('abc')
+    expect(wrapper.findAll(`${form} [data-testid=regras-senha] li.ok`)).toHaveLength(1) // minúscula
+    expect(wrapper.findAll(`${form} button[aria-label="Mostrar senha"]`)).toHaveLength(3)
+  })
+
   it('sucesso limpa os campos e confirma', async () => {
     const atualizarSenha = vi.spyOn(usuariosApi, 'atualizarSenha').mockResolvedValue(undefined)
     const { wrapper } = await abrir()
@@ -136,8 +161,16 @@ describe('Minha conta: excluir conta', () => {
 })
 
 describe('cabeçalho', () => {
-  it('tem o link Minha conta', async () => {
+  it('salvar o perfil atualiza o menu da conta (avatar sai do nick)', async () => {
+    vi.spyOn(usuariosApi, 'atualizar').mockResolvedValue(undefined)
     const { wrapper } = await abrir()
-    expect(wrapper.get('nav[aria-label=Principal] a[href="/conta"]').text()).toBe('Minha conta')
+    expect(wrapper.get('[data-testid=menu-conta]').text()).toBe('A') // nick "ana"
+
+    vi.mocked(usuariosApi.obter).mockResolvedValue({ ...EU, nick: 'bia_souza' })
+    await wrapper.get('[data-testid=form-perfil] input[name=nick]').setValue('bia_souza')
+    await wrapper.get('[data-testid=form-perfil]').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid=menu-conta]').text()).toBe('BS')
   })
 })

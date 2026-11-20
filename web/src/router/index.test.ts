@@ -80,3 +80,20 @@ describe('sessão expirada', () => {
     expect(router.currentRoute.value.query.redirect).toBe('/')
   })
 })
+
+describe('rolagem ao navegar', () => {
+  const rolagem = () => criarRouter(createMemoryHistory()).options.scrollBehavior!
+  const rota = (path: string) => ({ path, hash: '' }) as never
+
+  it('página nova começa no topo (antes ficava na altura da página anterior)', async () => {
+    expect(await rolagem()(rota('/perfil/2'), rota('/'), null)).toEqual({ top: 0 })
+  })
+
+  it('voltar/avançar restaura onde a pessoa estava', async () => {
+    expect(await rolagem()(rota('/'), rota('/perfil/2'), { left: 0, top: 640 })).toEqual({ left: 0, top: 640 })
+  })
+
+  it('trocar de aba no mesmo perfil não pula para o topo', async () => {
+    expect(await rolagem()(rota('/perfil/2/seguidores'), rota('/perfil/2'), null)).toBe(false)
+  })
+})

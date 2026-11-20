@@ -35,12 +35,13 @@ async function excluir() {
 <template>
   <section class="cartao zona-perigo" data-testid="excluir-conta" aria-labelledby="titulo-excluir">
     <h2 id="titulo-excluir" class="titulo-secao">Excluir conta</h2>
-    <p class="dica">
+    <p class="dica secao-descricao">
       Apaga sua conta, suas publicações, curtidas e conexões. Não dá para desfazer.
     </p>
     <form class="formulario" @submit.prevent="excluir">
       <label>
-        Digite <strong>{{ nick }}</strong> para confirmar
+        <!-- span: o label é coluna flex; sem ele, cada pedaço vira uma linha -->
+        <span>Digite <strong>{{ nick }}</strong> para confirmar</span>
         <input v-model="digitado" name="confirmar-nick" autocomplete="off" />
       </label>
       <p v-if="erro" class="erro" role="alert">{{ erro }}</p>

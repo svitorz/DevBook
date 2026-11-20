@@ -4,6 +4,7 @@ import { onMounted, ref } from 'vue'
 import { textoDoErro } from '../api/client'
 import { usuariosApi } from '../api/endpoints'
 import type { Usuario } from '../api/types'
+import AvatarUsuario from '../components/AvatarUsuario.vue'
 import ExcluirConta from '../components/conta/ExcluirConta.vue'
 import FormPerfil from '../components/conta/FormPerfil.vue'
 import FormSenha from '../components/conta/FormSenha.vue'
@@ -28,12 +29,22 @@ onMounted(async () => {
     <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
     <p v-else-if="!usuario" class="dica">Carregando…</p>
     <template v-else>
+      <div class="cartao conta-topo" data-testid="conta-topo">
+        <AvatarUsuario :nick="usuario.nick" :tamanho="56" />
+        <div class="conta-topo-quem">
+          <strong>{{ usuario.nome }}</strong>
+          <span class="dica">@{{ usuario.nick }} · {{ usuario.email }}</span>
+        </div>
+        <RouterLink :to="`/perfil/${usuario.id}`" class="botao-secundario">Ver perfil</RouterLink>
+      </div>
       <section class="cartao" aria-labelledby="titulo-perfil">
         <h2 id="titulo-perfil" class="titulo-secao">Perfil</h2>
+        <p class="dica secao-descricao">Nome e nick aparecem para quem visita seu perfil.</p>
         <FormPerfil :usuario="usuario" />
       </section>
       <section class="cartao" aria-labelledby="titulo-senha">
         <h2 id="titulo-senha" class="titulo-secao">Senha</h2>
+        <p class="dica secao-descricao">Para trocar, confirme a senha atual.</p>
         <FormSenha :usuario-id="usuario.id" />
       </section>
       <ExcluirConta :usuario-id="usuario.id" :nick="usuario.nick" />

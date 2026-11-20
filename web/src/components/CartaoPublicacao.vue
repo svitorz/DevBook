@@ -2,7 +2,11 @@
 import { computed, ref } from 'vue'
 import { textoDoErro } from '../api/client'
 import type { DadosPublicacao, Publicacao } from '../api/types'
+import { dataCompleta, tempoRelativo } from '../utils/tempo'
+import AvatarUsuario from './AvatarUsuario.vue'
 import FormPublicacao from './FormPublicacao.vue'
+import Icone from './Icone.vue'
+import JanelaModal from './JanelaModal.vue'
 
 const props = defineProps<{
   publicacao: Publicacao
@@ -13,11 +17,16 @@ const props = defineProps<{
 }>()
 
 const editando = ref(false)
+const confirmandoExclusao = ref(false)
 const ocupado = ref(false) // curtindo ou excluindo: evita clique duplo
 const erro = ref('')
 
-const formatoData = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-const data = computed(() => formatoData.format(new Date(props.publicacao.criadaEm)))
+const relativa = computed(() => tempoRelativo(props.publicacao.criadaEm))
+const completa = computed(() => dataCompleta(props.publicacao.criadaEm))
+const rotuloCurtidas = computed(() => {
+  const n = props.publicacao.curtidas
+  return `Curtir, ${n} curtida${n === 1 ? '' : 's'}`
+})
 
 async function executar(acao: () => Promise<void>) {
   erro.value = ''
@@ -33,8 +42,8 @@ async function executar(acao: () => Promise<void>) {
 
 const curtir = () => executar(() => props.aoCurtir(props.publicacao.id))
 
-function excluir() {
-  if (!window.confirm('Excluir esta publicação? Não dá para desfazer.')) return
+function confirmarExclusao() {
+  confirmandoExclusao.value = false
   executar(() => props.aoExcluir(props.publicacao.id))
 }
 
@@ -47,8 +56,11 @@ async function salvarEdicao(dados: DadosPublicacao) {
 <template>
   <article class="cartao publicacao">
     <header class="publicacao-topo">
-      <RouterLink :to="`/perfil/${publicacao.autor_id}`" class="autor">@{{ publicacao.autor_nick }}</RouterLink>
-      <time :datetime="publicacao.criadaEm">{{ data }}</time>
+      <RouterLink :to="`/perfil/${publicacao.autor_id}`" class="publicacao-autor">
+        <AvatarUsuario :nick="publicacao.autor_nick ?? ''" :tamanho="36" />
+        <span class="autor">@{{ publicacao.autor_nick }}</span>
+      </RouterLink>
+      <time :datetime="publicacao.criadaEm" :title="completa">{{ relativa }}</time>
     </header>
 
     <FormPublicacao
@@ -57,6 +69,7 @@ async function salvarEdicao(dados: DadosPublicacao) {
       :inicial="{ titulo: publicacao.titulo, conteudo: publicacao.conteudo }"
       :ao-salvar="salvarEdicao"
       cancelavel
+      focar-titulo
       @cancelar="editando = false"
     />
     <template v-else>
@@ -72,18 +85,60 @@ async function salvarEdicao(dados: DadosPublicacao) {
         class="botao-curtir"
         data-testid="curtir"
         :aria-pressed="publicacao.curtiu"
-        :aria-label="`Curtir, ${publicacao.curtidas} curtida${publicacao.curtidas === 1 ? '' : 's'}`"
+        :aria-label="rotuloCurtidas"
         :disabled="ocupado"
         @click="curtir"
       >
-        <span aria-hidden="true">{{ publicacao.curtiu ? '♥' : '♡' }}</span> {{ publicacao.curtidas }}
+        <Icone nome="coracao" :preenchido="publicacao.curtiu" />
+        <span>{{ publicacao.curtidas }}</span>
       </button>
-      <span v-if="ehMinha" class="acoes">
-        <button type="button" class="botao-texto" data-testid="editar" @click="editando = true">Editar</button>
-        <button type="button" class="botao-texto perigo" data-testid="excluir" :disabled="ocupado" @click="excluir">
-          Excluir
+      <span v-if="ehMinha" class="publicacao-acoes">
+        <button
+          type="button"
+          class="botao-icone"
+          data-testid="editar"
+          aria-label="Editar publicação"
+          title="Editar"
+          @click="editando = true"
+        >
+          <Icone nome="lapis" />
+        </button>
+        <button
+          type="button"
+          class="botao-icone perigo"
+          data-testid="excluir"
+          aria-label="Excluir publicação"
+          title="Excluir"
+          :disabled="ocupado"
+          @click="confirmandoExclusao = true"
+        >
+          <Icone nome="lixeira" />
         </button>
       </span>
     </footer>
+
+    <JanelaModal
+      v-if="ehMinha"
+      :aberto="confirmandoExclusao"
+      titulo="Excluir publicação?"
+      @fechar="confirmandoExclusao = false"
+    >
+      <p class="janela-texto">“{{ publicacao.titulo }}” será apagada, com as curtidas. Não dá para desfazer.</p>
+      <div class="acoes">
+        <!-- autofocus: o foco começa na opção segura -->
+        <button
+          type="button"
+          class="botao-secundario"
+          data-testid="cancelar-exclusao"
+          autofocus
+          @click="confirmandoExclusao = false"
+        >
+          Cancelar
+        </button>
+        <button type="button" class="botao botao-perigo" data-testid="confirmar-exclusao" @click="confirmarExclusao">
+          Excluir
+        </button>
+      </div>
+    </JanelaModal>
   </article>
 </template>

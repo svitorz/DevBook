@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DevBook</title>
+    <script>
+      // Aplica o tema escolhido antes do primeiro paint, para a tela não piscar
+      // no tema do sistema. Mesma chave de src/stores/tema.ts.
+      try {
+        var t = localStorage.getItem('devbook.tema')
+        if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="app"></div>

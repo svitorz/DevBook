@@ -1,5 +1,5 @@
 import { RouterLinkStub, flushPromises, mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../api/client'
 import type { Publicacao } from '../api/types'
 import CartaoPublicacao from './CartaoPublicacao.vue'
@@ -17,6 +17,7 @@ const PUB: Publicacao = {
 
 function montar(props: Record<string, unknown> = {}) {
   return mount(CartaoPublicacao, {
+    attachTo: document.body,
     global: { stubs: { RouterLink: RouterLinkStub } },
     props: {
       publicacao: PUB,
@@ -29,17 +30,48 @@ function montar(props: Record<string, unknown> = {}) {
   })
 }
 
-afterEach(() => vi.restoreAllMocks())
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-11-19T14:00:00Z')) // 30 min depois de PUB.criadaEm
+})
+afterEach(() => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+  document.body.innerHTML = ''
+})
 
 describe('CartaoPublicacao', () => {
-  it('mostra título, conteúdo, autor, data e curtidas', () => {
+  it('mostra título, conteúdo, autor com avatar, data e curtidas', () => {
     const w = montar()
     expect(w.text()).toContain('Título')
     expect(w.text()).toContain('Conteúdo do post')
     expect(w.text()).toContain('@ana')
-    expect(w.getComponent(RouterLinkStub).props('to')).toBe('/perfil/1') // autor_id
-    expect(w.get('time').attributes('datetime')).toBe(PUB.criadaEm)
+    const autor = w.getComponent(RouterLinkStub)
+    expect(autor.props('to')).toBe('/perfil/1') // autor_id
+    expect(autor.find('.avatar').text()).toBe('A')
     expect(w.get('[data-testid=curtir]').text()).toContain('2')
+  })
+
+  it('data relativa ("há 30 min"), com a data completa no title e no datetime', () => {
+    const w = montar()
+    const time = w.get('time')
+    expect(time.text()).toBe('há 30 min')
+    expect(time.attributes('datetime')).toBe(PUB.criadaEm)
+    expect(time.attributes('title')).toMatch(/19\/11\/2026/)
+  })
+
+  it('curtir usa um coração: vazado sem curtida, preenchido com', async () => {
+    const w = montar()
+    const svg = () => w.get('[data-testid=curtir] svg')
+    expect(svg().attributes('fill')).toBe('none')
+    await w.setProps({ publicacao: { ...PUB, curtiu: true } })
+    expect(svg().attributes('fill')).toBe('currentColor')
+  })
+
+  it('minha publicação: Editar e Excluir são botões de ícone com nome acessível', () => {
+    const w = montar({ ehMinha: true })
+    expect(w.get('[data-testid=editar]').attributes('aria-label')).toBe('Editar publicação')
+    expect(w.get('[data-testid=excluir]').attributes('aria-label')).toBe('Excluir publicação')
   })
 
   it('o botão reflete curtiu (aria-pressed) e chama aoCurtir com o id', async () => {
@@ -74,18 +106,26 @@ describe('CartaoPublicacao', () => {
     expect(w.find('form').exists()).toBe(false)
   })
 
-  it('excluir pede confirmação; cancelado não chama a API', async () => {
+  it('excluir pede confirmação num modal; cancelar não chama a API', async () => {
     const aoExcluir = vi.fn().mockResolvedValue(undefined)
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const w = montar({ ehMinha: true, aoExcluir })
+    const dialogo = () => w.get('dialog').element as HTMLDialogElement
+    expect(dialogo().open).toBe(false)
 
     await w.get('[data-testid=excluir]').trigger('click')
-    expect(confirmar).toHaveBeenCalled()
+    expect(dialogo().open).toBe(true)
+    expect(w.get('dialog').text()).toContain('Não dá para desfazer')
+    expect(document.activeElement?.textContent?.trim()).toBe('Cancelar') // foco na opção segura
+
+    await w.get('dialog [data-testid=cancelar-exclusao]').trigger('click')
+    expect(dialogo().open).toBe(false)
     expect(aoExcluir).not.toHaveBeenCalled()
 
-    confirmar.mockReturnValue(true)
     await w.get('[data-testid=excluir]').trigger('click')
+    await w.get('dialog [data-testid=confirmar-exclusao]').trigger('click')
+    await flushPromises()
     expect(aoExcluir).toHaveBeenCalledWith(7)
+    expect(dialogo().open).toBe(false)
   })
 
   it('erro ao curtir aparece no cartão', async () => {
