@@ -15,6 +15,10 @@ export type NomeIcone =
   | 'lixeira'
   | 'mais'
   | 'fechar'
+  | 'olho'
+  | 'olho-fechado'
+  | 'check'
+  | 'circulo'
 
 // preenchido: o desenho ganha cor sólida (ex.: coração de "curtido").
 withDefaults(defineProps<{ nome: NomeIcone; tamanho?: number; preenchido?: boolean }>(), { tamanho: 18 })
@@ -62,5 +66,16 @@ withDefaults(defineProps<{ nome: NomeIcone; tamanho?: number; preenchido?: boole
     <path v-else-if="nome === 'lixeira'" d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
     <path v-else-if="nome === 'mais'" d="M12 5v14M5 12h14" />
     <path v-else-if="nome === 'fechar'" d="M6 6l12 12M18 6 6 18" />
+    <template v-else-if="nome === 'olho'">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </template>
+    <template v-else-if="nome === 'olho-fechado'">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M3 3l18 18" />
+    </template>
+    <path v-else-if="nome === 'check'" d="m5 12 5 5 9-10" />
+    <circle v-else-if="nome === 'circulo'" cx="12" cy="12" r="7" />
   </svg>
 </template>
