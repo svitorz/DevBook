@@ -3,7 +3,7 @@
 > Memória do projeto. Ler ANTES de qualquer coisa ao iniciar sessão ou após compactação.
 
 ## Fase atual
-**Fase C — interface mais bonita e intuitiva. C0 e C1 concluídas; aguardando "continuar" para a C2 (feed)**
+**Fase C — interface mais bonita e intuitiva. C0, C1 e C2 concluídas; aguardando "continuar" para a C3 (perfil, busca e conexões)**
 Branch: `feat/web-ui` (criada de `main@cba7a89`; a fase B foi mergeada via PR #3).
 
 ### Decisões da Fase C (confirmadas pelo usuário em 2026-11-19)
@@ -16,7 +16,7 @@ Meta: melhorar visual e usabilidade **só no front**, sem mudar a API. Cada para
 6. **Subfases (parada ao fim de cada uma):**
    - C0: fundação visual (tokens, fonte, ícones, tema claro/escuro, componentes base)
    - C1: navegação (logo, menu do avatar, barra de abas no celular)
-   - C2: feed (publicar recolhido, cartão com avatar e tempo relativo, esqueleto, confirmação própria, avisos)
+   - C2: feed ("Novo post" em modal, por pedido do usuário durante a C2; cartão com avatar e tempo relativo, esqueleto, confirmação própria, avisos)
    - C3: perfil, busca e conexões (cabeçalho do perfil, abas, busca ao digitar, Seguir nas listas)
    - C4: entrada e conta (apresentação, mostrar senha, regras visíveis, seções)
 
@@ -30,7 +30,12 @@ Meta: melhorar visual e usabilidade **só no front**, sem mudar a API. Cada para
 - [x] C1 cabeçalho com logo e favicon, nav Início/Buscar/Perfil com ícones e `aria-current`, menu da conta (nome, @nick, Minha conta, Sair) e barra de abas no celular (`752726e`); 11 testes falhavam antes
 - [x] C1 110 testes Vitest + build passando; imagem web rebuildada (`:8080` → 200, favicon novo servido)
 - [x] C1 prova no navegador: menu abre pelo mouse e pelo teclado (Tab → Enter → Tab em "Minha conta" → Esc fecha e devolve o foco ao avatar); clique fora fecha; em 375px a nav fica `fixed` no rodapé (bottom = 812 = altura da tela), sem rolagem horizontal e com `padding-bottom` de 64px no body; Perfil ativo em `/perfil/46/seguindo`; Sair pelo menu limpa o storage, e deslogado o cabeçalho mostra só marca e tema (sem padding); o login carrega o avatar ("VC") sem F5
-- [ ] C2 feed
+- [x] C2 janela modal sobre `<dialog>` nativo + setup de teste para o jsdom (`63dd308`)
+- [x] C2 tempo relativo e avisos curtos (`bb9c2eb`)
+- [x] C2 cartão com avatar, tempo relativo, coração, botões de ícone, exclusão em modal, esqueleto no perfil; avatar passa a sair sempre do nick (`8708fbb`)
+- [x] C2 "Novo post" abre o formulário num modal (pedido do usuário) (`763e2f0`)
+- [x] C2 130 testes Vitest + build passando; os testes novos falhavam antes; cada commit intermediário também passa em testes e `vue-tsc` (verificado numa worktree temporária); imagem web rebuildada (`:8080` → 200)
+- [x] C2 prova no navegador: "Novo post" abre um dialog `:modal` com o cursor no título; Esc fecha e devolve o foco ao botão; 6 Tabs mantêm o foco dentro da janela; publicar fecha a janela, põe o post no topo com "agora" e mostra "Publicado."; a lixeira abre "Excluir publicação?" com o foco em Cancelar; confirmar remove, avisa "Publicação excluída." e a exclusão persiste após o F5; em 375px a janela cabe (18–357px) sem rolagem horizontal; avatar "CV" igual no cabeçalho e nos cartões, "BO" para b2_outra
 - [ ] C3 perfil, busca e conexões
 - [ ] C4 entrada e conta
 
@@ -207,6 +212,7 @@ O ESPERADO de cada item é o contrato-alvo da fase 2. Itens `[contrato]` depende
 Não cobertos pela fumaça (provar com teste Go na fase 2): H1 (registro duplicado de rota), H7 (SECRET_KEY vazia), H9/H10/H11 (infra).
 
 ## Log de decisões
+- 2026-11-19 — **Fase C2, decisões técnicas**: (1) **"Novo post" em modal** (pedido do usuário no meio da C2, no lugar do "publicar recolhido" do plano); (2) modal sobre **`<dialog>` + `showModal()`**: foco preso, fundo inerte, Esc e retorno do foco vêm do navegador. Descartado: modal em `<div>`, que reimplementaria tudo isso. O jsdom não tem `showModal`, então `src/testes/setup.ts` simula atributo `open` + evento `close`; o comportamento real foi provado no navegador; (3) **clicar no fundo não fecha** o modal: um clique errado apagaria o texto digitado. Fechar só por X, Cancelar ou Esc. O conteúdo do modal nasce a cada abertura (`v-if`), então reabrir começa limpo: o rascunho não é guardado (trade-off aceito); (4) **avatar sempre pelo nick**: a C1 usava as iniciais do nome no cabeçalho, mas a publicação só traz o nick, e a mesma pessoa aparecia como "VC" e "C". Agora `c0_visual` vira "CV" em todo lugar. Achado no navegador, com teste antes da correção; (5) tempo relativo escrito à mão (o `Intl.RelativeTimeFormat` muda com o ICU). O texto não se atualiza com a página parada; atualiza ao navegar ou recarregar; (6) avisos numa store, com a região `aria-live` sempre presente e **sem `role=status`**, para não colidir com as mensagens `role=status` dos formulários. Erros continuam perto do botão (B2). Curtir não avisa, porque o coração já mostra; (7) a confirmação de excluir começa com foco em **Cancelar** (opção segura); (8) `limparAoSalvar` saiu do `FormPublicacao`, porque o formulário de criar é desmontado ao fechar o modal.
 - 2026-11-19 — **Fase C1, decisões técnicas**: (1) **o Perfil saiu do menu e foi para a nav**, e a nav tem 3 itens (Início, Buscar, Perfil): cabem na barra de abas do celular sem apertar. Minha conta e Sair ficam no menu do avatar, que existe nas duas larguras. Descartado: duplicar os links (nav no desktop + barra diferente no celular), que daria dois lugares para manter; (2) **uma única `<nav>`**, que vira barra de abas só por CSS (`@media max-width: 639px`); (3) **menu como disclosure** (`aria-expanded` + `aria-controls`), não `role=menu`: o papel de menu promete navegação por setas e Home/End, e com Tab + Esc o padrão disclosure é o correto; (4) nome/nick ficam na store da sessão, **fora do localStorage**: são buscados a cada carga e depois de salvar o perfil, e a API segue como fonte da verdade (como na B3). Se a busca falhar, o avatar mostra "?" e o menu continua funcionando; (5) `backdrop-filter` desligado no celular: ele torna o header o containing block de descendentes `position: fixed`, e a barra ficaria presa ao header; (6) o espaço para a barra usa `body:has(.nav-principal)`, então deslogado não sobra padding; (7) testes de cabeçalho que viviam em `BuscaView.test` e `ContaView.test` verificavam o lugar antigo dos links (mudança aprovada no plano da fase C). Foram para `CabecalhoApp.test`, não afrouxados; o `ContaView.test` ganhou "salvar o perfil atualiza o nome no menu".
 - 2026-11-19 — **Fase C0, decisões técnicas**: (1) **componentes base mudaram de subfase**: o Avatar entra na C1 (primeiro uso: menu do cabeçalho) e o Campo na C4 (formulários de entrada/conta). Criá-los agora deixaria código sem uso nem teste no contexto real; botões continuam como classes CSS (`.botao`, `.botao-secundario`, `.botao-perigo`, `.botao-texto`, `.botao-icone`), porque um componente wrapper não acrescentaria comportamento; (2) tema em store pinia, como a sessão, e não num ref de módulo, que vazaria estado entre testes; (3) um script inline no `index.html` aplica o tema salvo antes do paint. Trade-off: a chave `devbook.tema` aparece em dois lugares (comentado nos dois). Descartado: aplicar só no `main.ts`, que pisca a cada F5 para quem escolheu o tema oposto ao do sistema; (4) depois de clicar, a escolha manual vale sobre o sistema, e não há opção "voltar a seguir o sistema" (um botão de dois estados é mais claro que um ciclo de três); (5) no tema escuro, o texto dos botões coloridos é escuro (`--texto-sobre-cor`): branco sobre `#818cf8`/`#f87171` ficaria abaixo de 3:1; (6) o lock foi regenerado de novo com o npm da imagem, porque o `npm install` do host removeu o `@emnapi/*`; (7) o `npm audit` acusa 5 moderadas, todas anteriores e só de dev (`@vue/test-utils` → `editorconfig` → `minimatch`); o "fix" é rebaixar o test-utils, por isso não mexi.
 - 2026-11-19 — Branch `chore/api-hardening` criada de `main` sem mexer no WIP não comitado (switch carrega as mudanças; nada foi descartado).
@@ -277,4 +283,4 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 - Paginação em feed/listas, rate limit no login, refresh token: fora do escopo, como combinado.
 
 ## Próximo passo
-C1 concluída. Aguardando "continuar" para a C2 (feed: publicar recolhido, cartão com avatar e tempo relativo, curtir com ícone, esqueleto de carregamento, confirmação própria no lugar do `window.confirm`, avisos curtos).
+C2 concluída. Aguardando "continuar" para a C3 (perfil com avatar grande e abas Publicações/Seguidores/Seguindo, busca ao digitar com espera de 300 ms, Seguir direto nas listas).
