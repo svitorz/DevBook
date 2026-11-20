@@ -3,7 +3,7 @@
 > Memória do projeto. Ler ANTES de qualquer coisa ao iniciar sessão ou após compactação.
 
 ## Fase atual
-**Fase C — interface mais bonita e intuitiva. Em andamento: C0 (fundação visual)**
+**Fase C — interface mais bonita e intuitiva. C0 concluída; aguardando "continuar" para a C1 (navegação)**
 Branch: `feat/web-ui` (criada de `main@cba7a89`; a fase B foi mergeada via PR #3).
 
 ### Decisões da Fase C (confirmadas pelo usuário em 2026-11-19)
@@ -21,10 +21,15 @@ Meta: melhorar visual e usabilidade **só no front**, sem mudar a API. Cada para
    - C4: entrada e conta (apresentação, mostrar senha, regras visíveis, seções)
 
 ### Checklist Fase C
-- [ ] C0 fonte Inter e tokens de design
-- [ ] C0 tema claro/escuro com botão
-- [ ] C0 ícones e componentes base
-- [ ] C0 prova no navegador com prints de antes/depois
+- [x] C0 fonte Inter e tokens de design (`27ad4e3`); contraste ≥ 4.5:1 em todos os pares texto/fundo, nos dois temas (calculado)
+- [x] C0 tema claro/escuro com botão no cabeçalho e `Icone.vue` (`bb86e9a`); 7 testes novos falhavam antes
+- [x] C0 rótulo "Digite <nick> para confirmar" quebrava em 3 linhas, defeito anterior à fase C (`0454adb`); prova visual
+- [x] C0 94 testes Vitest + build passando; imagem web rebuildada com `npm ci` (`:8080` → 200)
+- [x] C0 prova no navegador: só o subconjunto latino da Inter é baixado; alternar grava `devbook.tema` e aplica `data-tema`; o F5 mantém a escolha; prints de antes/depois de feed, perfil e conta. Usuário de teste `c0_visual` (id 46) criado no banco de dev, seguindo o `b2_outra`
+- [ ] C1 navegação
+- [ ] C2 feed
+- [ ] C3 perfil, busca e conexões
+- [ ] C4 entrada e conta
 
 ### Fase B — front Vue (concluída, PR #3)
 
@@ -199,6 +204,7 @@ O ESPERADO de cada item é o contrato-alvo da fase 2. Itens `[contrato]` depende
 Não cobertos pela fumaça (provar com teste Go na fase 2): H1 (registro duplicado de rota), H7 (SECRET_KEY vazia), H9/H10/H11 (infra).
 
 ## Log de decisões
+- 2026-11-19 — **Fase C0, decisões técnicas**: (1) **componentes base mudaram de subfase**: o Avatar entra na C1 (primeiro uso: menu do cabeçalho) e o Campo na C4 (formulários de entrada/conta). Criá-los agora deixaria código sem uso nem teste no contexto real; botões continuam como classes CSS (`.botao`, `.botao-secundario`, `.botao-perigo`, `.botao-texto`, `.botao-icone`), porque um componente wrapper não acrescentaria comportamento; (2) tema em store pinia, como a sessão, e não num ref de módulo, que vazaria estado entre testes; (3) um script inline no `index.html` aplica o tema salvo antes do paint. Trade-off: a chave `devbook.tema` aparece em dois lugares (comentado nos dois). Descartado: aplicar só no `main.ts`, que pisca a cada F5 para quem escolheu o tema oposto ao do sistema; (4) depois de clicar, a escolha manual vale sobre o sistema, e não há opção "voltar a seguir o sistema" (um botão de dois estados é mais claro que um ciclo de três); (5) no tema escuro, o texto dos botões coloridos é escuro (`--texto-sobre-cor`): branco sobre `#818cf8`/`#f87171` ficaria abaixo de 3:1; (6) o lock foi regenerado de novo com o npm da imagem, porque o `npm install` do host removeu o `@emnapi/*`; (7) o `npm audit` acusa 5 moderadas, todas anteriores e só de dev (`@vue/test-utils` → `editorconfig` → `minimatch`); o "fix" é rebaixar o test-utils, por isso não mexi.
 - 2026-11-19 — Branch `chore/api-hardening` criada de `main` sem mexer no WIP não comitado (switch carrega as mudanças; nada foi descartado).
 - 2026-11-19 — Não subi o docker na Fase 0 (criaria containers/volume e a Fase 0 é só leitura). H11 validada por leitura + `docker compose config`. A execução real é o 1º passo da Fase 1.
 
@@ -267,4 +273,4 @@ O contrato final está na tabela de endpoints do README. Mudanças em relação 
 - Paginação em feed/listas, rate limit no login, refresh token: fora do escopo, como combinado.
 
 ## Próximo passo
-Fase C em andamento: C0 (fundação visual). Ao terminar, parar e aguardar "continuar" para a C1.
+C0 concluída. Aguardando "continuar" para a C1 (navegação: logo, menu do avatar com Minha conta/Sair, barra de abas no celular; o cabeçalho atual ainda quebra em 375px).
